@@ -1,12 +1,18 @@
 "use client";
 import Link from "next/link";
+import { useRef } from "react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Coins, LogOut, Settings, User } from "lucide-react";
 import { logoutAction } from "@/actions/auth";
 
 export function UserMenu({ name, email, tokens, isStaff }: { name: string; email: string; tokens: number; isStaff: boolean }) {
+  // Das Formular liegt außerhalb des Menüs: Radix schließt (und entfernt) das Menü beim Auswählen,
+  // ein darin liegendes Formular würde dann nicht mehr abgeschickt.
+  const logoutForm = useRef<HTMLFormElement>(null);
   const item = "flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-foreground outline-none data-[highlighted]:bg-surface-3";
   return (
+    <>
+    <form ref={logoutForm} action={logoutAction} className="hidden" aria-hidden />
     <DropdownMenu.Root>
       <DropdownMenu.Trigger className="flex size-10 items-center justify-center rounded-full border border-gold/40 bg-surface-2 font-display text-lg text-gold" aria-label="Benutzermenü">
         {name.slice(0, 1).toUpperCase()}
@@ -23,13 +29,12 @@ export function UserMenu({ name, email, tokens, isStaff }: { name: string; email
           <DropdownMenu.Item asChild><Link href="/dashboard/einstellungen" className={item}><Settings className="size-4" /> Kontoeinstellungen</Link></DropdownMenu.Item>
           {isStaff ? <DropdownMenu.Item asChild><Link href="/admin" className={item}><Settings className="size-4" /> Verwaltung</Link></DropdownMenu.Item> : null}
           <DropdownMenu.Separator className="my-1 h-px bg-border" />
-          <form action={logoutAction}>
-            <DropdownMenu.Item asChild>
-              <button type="submit" className={item + " w-full"}><LogOut className="size-4" /> Abmelden</button>
-            </DropdownMenu.Item>
-          </form>
+          <DropdownMenu.Item className={item} onSelect={() => logoutForm.current?.requestSubmit()}>
+            <LogOut className="size-4" /> Abmelden
+          </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
+    </>
   );
 }

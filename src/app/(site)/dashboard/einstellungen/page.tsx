@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { AccountForm, DeleteAccountForm, PasswordForm } from "@/components/account/forms";
 import { ResendVerificationButton } from "@/components/dashboard/resend-verification";
+import { logoutAction } from "@/actions/auth";
 
 export const metadata = { title: "Kontoeinstellungen" };
 
@@ -15,7 +16,7 @@ export default async function SettingsPage() {
   const sessions = await db.session.count({ where: { userId: user.id, expiresAt: { gt: new Date() } } });
   return (
     <div>
-      <PageHeader title="Kontoeinstellungen" description={`${ROLE_LABELS[user.role]} · ${user.email}`} />
+      <PageHeader title="Kontoeinstellungen" description={`${ROLE_LABELS[user.role]} · ${user.email}`} actions={<form action={logoutAction}><Button type="submit" variant="outline">Abmelden</Button></form>} />
       <div className="grid gap-6 xl:grid-cols-2">
         <Card>
           <CardHeader><CardTitle>Kontodaten</CardTitle><CardDescription>E-Mail: {user.email} {user.emailVerifiedAt ? `(bestätigt am ${formatDate(user.emailVerifiedAt)})` : "(nicht bestätigt)"}</CardDescription></CardHeader>

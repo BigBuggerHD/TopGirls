@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Menu } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { logoutAction } from "@/actions/auth";
 
 const NAV = [
   { href: "/", label: "Startseite" },
@@ -31,7 +32,10 @@ export function MobileNav({ loggedIn }: { loggedIn: boolean }) {
           ))}
           <div className="mt-6 grid grid-cols-2 gap-3">
             {loggedIn ? (
-              <Button asChild className="col-span-2"><Link href="/dashboard" onClick={() => setOpen(false)}>Dashboard</Link></Button>
+              <>
+                <Button asChild><Link href="/dashboard" onClick={() => setOpen(false)}>Dashboard</Link></Button>
+                <form action={logoutAction}><Button type="submit" variant="outline" className="w-full">Abmelden</Button></form>
+              </>
             ) : (
               <>
                 <Button asChild variant="outline"><Link href="/login" onClick={() => setOpen(false)}>Login</Link></Button>
