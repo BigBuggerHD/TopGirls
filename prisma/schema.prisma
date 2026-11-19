@@ -1,0 +1,791 @@
+// Top Girls – Datenbankschema
+// Alle Geldbeträge in Euro-Cent (Int), alle Zeitstempel in UTC.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Benutzer, Rollen, Sessions
+// ─────────────────────────────────────────────────────────────
+
+enum Role {
+  VISITOR // Besucher (registriertes Kundenkonto)
+  PROVIDER // Einzelanbieterin / Profilinhaberin
+  AGENCY // Agentur
+  APARTMENT // Apartmentanbieter
+  CLUB // Clubbetreiber
+  MASSAGE_STUDIO // Massagestudio
+  MODERATOR
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED // befristet gesperrt
+  BANNED // dauerhaft gesperrt
+  DELETED // anonymisiert (DSGVO-Löschung)
+}
+
+enum VerificationStatus {
+  NONE
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id                 String             @id @default(cuid())
+  email              String             @unique
+  passwordHash       String
+  role               Role               @default(VISITOR)
+  status             UserStatus         @default(ACTIVE)
+  displayName        String
+  companyName        String?
+  emailVerifiedAt    DateTime?
+  verificationStatus VerificationStatus @default(NONE)
+  suspendedUntil     DateTime?
+  suspensionReason   String?
+  tokenBalance       Int                @default(0)
+  termsAcceptedAt    DateTime?
+  forumRulesAcceptedAt DateTime?
+  lastLoginAt        DateTime?
+  failedLoginCount   Int                @default(0)
+  lockedUntil        DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  sessions          Session[]
+  authTokens        AuthToken[]
+  profiles          Profile[]
+  verifications     IdentityVerification[] @relation("VerificationUser")
+  reviewedVerifications IdentityVerification[] @relation("VerificationReviewer")
+  transactions      TokenTransaction[]       @relation("TransactionUser")
+  createdTransactions TokenTransaction[]     @relation("TransactionCreator")
+  payments          Payment[]
+  adBookings        AdBooking[]
+  listings          MarketplaceListing[]
+  participations    ConversationParticipant[]
+  messages          Message[]
+  notifications     Notification[]
+  forumThreads      ForumThread[]
+  forumPosts        ForumPost[]
+  reports           Report[]                 @relation("ReportReporter")
+  handledReports    Report[]                 @relation("ReportHandler")
+  auditLogs         AuditLog[]
+  promotions        Promotion[]
+
+  @@index([role])
+  @@index([status])
+}
+
+model Session {
+  id         String   @id // SHA-256-Hash des Session-Tokens
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  ipHash     String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+}
+
+enum AuthTokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+model AuthToken {
+  id        String        @id // SHA-256-Hash
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      AuthTokenType
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime      @default(now())
+
+  @@index([userId, type])
+}
+
+enum VerificationDocType {
+  ID_CARD // Personalausweis
+  PASSPORT // Reisepass
+  PROSTSCHG_CERT // Anmeldebescheinigung nach § 5 ProstSchG
+  BUSINESS_REGISTRATION // Gewerbeanmeldung / Handelsregister
+  MODEL_CONSENT // Einwilligung + Altersnachweis der abgebildeten Person (Agenturprofile)
+}
+
+model IdentityVerification {
+  id           String              @id @default(cuid())
+  userId       String
+  user         User                @relation("VerificationUser", fields: [userId], references: [id], onDelete: Cascade)
+  profileId    String?
+  profile      Profile?            @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  docType      VerificationDocType
+  // Privater Speicherschlüssel – wird nach der Prüfung gelöscht (Datenminimierung)
+  documentKey  String?
+  selfieKey    String?
+  birthYear    Int?
+  status       VerificationStatus  @default(PENDING)
+  reviewerId   String?
+  reviewer     User?               @relation("VerificationReviewer", fields: [reviewerId], references: [id])
+  reviewNote   String?
+  reviewedAt   DateTime?
+  createdAt    DateTime            @default(now())
+
+  @@index([status])
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Kategorien, dynamische Filter
+// ─────────────────────────────────────────────────────────────
+
+model Category {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  profiles Profile[]
+  filters  FilterCategory[]
+}
+
+enum FilterType {
+  SELECT // Einfachauswahl
+  MULTISELECT // Mehrfachauswahl
+  BOOLEAN // Ja/Nein
+  NUMBER // Zahl mit Bereichsfilter
+}
+
+model FilterDefinition {
+  id          String     @id @default(cuid())
+  key         String     @unique
+  label       String
+  type        FilterType
+  unit        String?
+  helpText    String?
+  sortOrder   Int        @default(0)
+  active      Boolean    @default(true)
+  showInSearch Boolean   @default(true)
+  minValue    Int?
+  maxValue    Int?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  options    FilterOption[]
+  categories FilterCategory[]
+  values     ProfileAttribute[]
+}
+
+model FilterOption {
+  id        String           @id @default(cuid())
+  filterId  String
+  filter    FilterDefinition @relation(fields: [filterId], references: [id], onDelete: Cascade)
+  value     String
+  label     String
+  sortOrder Int              @default(0)
+  active    Boolean          @default(true)
+
+  values ProfileAttributeOption[]
+
+  @@unique([filterId, value])
+}
+
+model FilterCategory {
+  filterId   String
+  categoryId String
+  filter     FilterDefinition @relation(fields: [filterId], references: [id], onDelete: Cascade)
+  category   Category         @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([filterId, categoryId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Sedcards / Profile
+// ─────────────────────────────────────────────────────────────
+
+enum ProfileStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  REJECTED
+  PAUSED
+  EXPIRED
+  BLOCKED
+}
+
+model Profile {
+  id               String        @id @default(cuid())
+  slug             String        @unique
+  ownerId          String
+  owner            User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  categoryId       String
+  category         Category      @relation(fields: [categoryId], references: [id])
+  stageName        String
+  headline         String?
+  description      String        @default("")
+  city             String        @default("")
+  postalCode       String?
+  region           String?
+  age              Int? // angegebenes Alter (>= 18, serverseitig geprüft)
+  languages        String[]      @default([])
+  availability     Json? // { mo: {from,to,active}, ... }
+  availabilityNote String?
+  contactPhone     String?
+  contactWhatsapp  String?
+  contactEmail     String?
+  contactWebsite   String?
+  showPhone        Boolean       @default(true)
+  allowMessages    Boolean       @default(true)
+  status           ProfileStatus @default(DRAFT)
+  rejectionReason  String?
+  consentConfirmedAt DateTime? // Bestätigung: volljährig, freiwillig, Bildrechte
+  verified         Boolean       @default(false)
+  // Denormalisierte Laufzeiten aktiver Promotions (für performante Sortierung)
+  premiumUntil     DateTime?
+  highlightUntil   DateTime?
+  sponsoredUntil   DateTime?
+  publishedAt      DateTime?
+  expiresAt        DateTime?
+  submittedAt      DateTime?
+  reviewedAt       DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  images        ProfileImage[]
+  attributes    ProfileAttribute[]
+  stats         ProfileStatDaily[]
+  promotions    Promotion[]
+  adBookings    AdBooking[]
+  verifications IdentityVerification[]
+
+  @@index([status, categoryId])
+  @@index([city])
+  @@index([ownerId])
+  @@index([premiumUntil])
+}
+
+enum ImageStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ProfileImage {
+  id          String      @id @default(cuid())
+  profileId   String
+  profile     Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  storageKey  String      @unique
+  thumbKey    String
+  width       Int
+  height      Int
+  sha256      String
+  status      ImageStatus @default(PENDING)
+  rejectReason String?
+  isCover     Boolean     @default(false)
+  sortOrder   Int         @default(0)
+  createdAt   DateTime    @default(now())
+
+  @@index([profileId, status])
+  @@index([sha256])
+}
+
+model ProfileAttribute {
+  id          String           @id @default(cuid())
+  profileId   String
+  profile     Profile          @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  filterId    String
+  filter      FilterDefinition @relation(fields: [filterId], references: [id], onDelete: Cascade)
+  numberValue Int?
+  boolValue   Boolean?
+
+  options ProfileAttributeOption[]
+
+  @@unique([profileId, filterId])
+  @@index([filterId, numberValue])
+}
+
+model ProfileAttributeOption {
+  attributeId String
+  optionId    String
+  attribute   ProfileAttribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  option      FilterOption     @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@id([attributeId, optionId])
+  @@index([optionId])
+}
+
+model ProfileStatDaily {
+  profileId   String
+  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  date        DateTime @db.Date
+  impressions Int      @default(0)
+  views       Int      @default(0)
+  clicks      Int      @default(0)
+
+  @@id([profileId, date])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Premium-Produkte, Promotions, Werbesystem
+// ─────────────────────────────────────────────────────────────
+
+enum PromotionType {
+  PREMIUM // Premium-Sedcard (oben + Badge)
+  HIGHLIGHT // Hervorhebung (goldener Rahmen)
+  SPONSORED_SEARCH // Gesponsertes Suchergebnis
+  EXTENSION // Laufzeitverlängerung
+}
+
+model PremiumProduct {
+  id           String        @id @default(cuid())
+  type         PromotionType @unique
+  name         String
+  description  String?
+  tokenCost    Int
+  durationDays Int
+  priority     Int           @default(0)
+  active       Boolean       @default(true)
+  updatedAt    DateTime      @updatedAt
+}
+
+model Promotion {
+  id         String        @id @default(cuid())
+  profileId  String
+  profile    Profile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       PromotionType
+  startsAt   DateTime
+  endsAt     DateTime
+  tokenCost  Int
+  priority   Int           @default(0)
+  transactionId String?    @unique
+  transaction TokenTransaction? @relation(fields: [transactionId], references: [id])
+  createdAt  DateTime      @default(now())
+
+  @@index([type, endsAt])
+  @@index([profileId])
+}
+
+enum AdLocation {
+  HOME_HERO
+  HOME_INLINE
+  SEARCH_TOP
+  SEARCH_SIDEBAR
+  PROFILE_SIDEBAR
+  MARKETPLACE_TOP
+}
+
+model AdPlacement {
+  id              String     @id @default(cuid())
+  key             String     @unique
+  name            String
+  description     String?
+  location        AdLocation
+  width           Int
+  height          Int
+  maxActive       Int        @default(3)
+  tokenCostPerDay Int
+  priority        Int        @default(0)
+  active          Boolean    @default(true)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  bookings AdBooking[]
+}
+
+enum AdBookingStatus {
+  PENDING_REVIEW
+  SCHEDULED
+  ACTIVE
+  REJECTED
+  EXPIRED
+  CANCELLED
+}
+
+model AdBooking {
+  id            String          @id @default(cuid())
+  placementId   String
+  placement     AdPlacement     @relation(fields: [placementId], references: [id])
+  userId        String
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profileId     String?
+  profile       Profile?        @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  title         String
+  subtitle      String?
+  imageKey      String?
+  targetUrl     String?
+  startsAt      DateTime
+  endsAt        DateTime
+  days          Int
+  tokenCost     Int
+  priority      Int             @default(0)
+  status        AdBookingStatus @default(PENDING_REVIEW)
+  rejectReason  String?
+  impressions   Int             @default(0)
+  clicks        Int             @default(0)
+  transactionId String?         @unique
+  transaction   TokenTransaction? @relation(fields: [transactionId], references: [id])
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([placementId, status, startsAt, endsAt])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Token-System & Zahlungen
+// ─────────────────────────────────────────────────────────────
+
+model TokenPackage {
+  id          String   @id @default(cuid())
+  name        String
+  tokens      Int
+  bonusTokens Int      @default(0)
+  priceCents  Int
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  payments Payment[]
+}
+
+enum TransactionType {
+  PURCHASE // Token-Kauf
+  SPEND // Verbrauch
+  REFUND // Rückerstattung
+  ADMIN_CREDIT // Gutschrift durch Admin
+  ADMIN_DEBIT // Belastung durch Admin
+  BONUS
+  REVERSAL // Storno (z. B. Chargeback)
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REVERSED
+}
+
+model TokenTransaction {
+  id           String            @id @default(cuid())
+  userId       String
+  user         User              @relation("TransactionUser", fields: [userId], references: [id], onDelete: Cascade)
+  type         TransactionType
+  status       TransactionStatus @default(COMPLETED)
+  tokens       Int // positiv = Gutschrift, negativ = Belastung
+  amountCents  Int? // Geldbetrag (nur bei Käufen/Erstattungen)
+  balanceAfter Int
+  reference    String            @unique // Idempotenzschlüssel / Belegreferenz
+  description  String
+  paymentId    String?
+  payment      Payment?          @relation(fields: [paymentId], references: [id])
+  createdById  String?
+  createdBy    User?             @relation("TransactionCreator", fields: [createdById], references: [id])
+  createdAt    DateTime          @default(now())
+
+  promotion Promotion?
+  adBooking AdBooking?
+
+  @@index([userId, createdAt])
+  @@index([type])
+}
+
+enum PaymentProvider {
+  PAYPAL
+  CREDIT_CARD
+  NEXTCOUP
+  SANDBOX
+}
+
+enum PaymentStatus {
+  CREATED
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+model Payment {
+  id             String          @id @default(cuid())
+  userId         String
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  packageId      String?
+  package        TokenPackage?   @relation(fields: [packageId], references: [id])
+  provider       PaymentProvider
+  providerRef    String?
+  idempotencyKey String          @unique
+  amountCents    Int
+  currency       String          @default("EUR")
+  tokens         Int
+  status         PaymentStatus   @default(CREATED)
+  failureReason  String?
+  completedAt    DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  transactions TokenTransaction[]
+
+  @@unique([provider, providerRef])
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+model WebhookEvent {
+  id          String          @id @default(cuid())
+  provider    PaymentProvider
+  eventId     String
+  type        String
+  payload     Json
+  status      String          @default("RECEIVED") // RECEIVED | PROCESSED | IGNORED | FAILED
+  error       String?
+  receivedAt  DateTime        @default(now())
+  processedAt DateTime?
+
+  @@unique([provider, eventId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Marktplatz
+// ─────────────────────────────────────────────────────────────
+
+model MarketplaceCategory {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+
+  listings MarketplaceListing[]
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  REJECTED
+  REMOVED
+  EXPIRED
+}
+
+model MarketplaceListing {
+  id           String              @id @default(cuid())
+  ownerId      String
+  owner        User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  categoryId   String
+  category     MarketplaceCategory @relation(fields: [categoryId], references: [id])
+  title        String
+  description  String
+  city         String
+  priceCents   Int?
+  priceUnit    String? // z. B. "pro Woche", "pro Monat"
+  contactEmail String?
+  contactPhone String?
+  status       ListingStatus       @default(PENDING_REVIEW)
+  moderationNote String?
+  publishedAt  DateTime?
+  expiresAt    DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([status, categoryId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Nachrichten & Benachrichtigungen
+// ─────────────────────────────────────────────────────────────
+
+model Conversation {
+  id        String   @id @default(cuid())
+  subject   String?
+  profileId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participants ConversationParticipant[]
+  messages     Message[]
+}
+
+model ConversationParticipant {
+  conversationId String
+  userId         String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastReadAt     DateTime?
+  archived       Boolean      @default(false)
+  blocked        Boolean      @default(false)
+
+  @@id([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  body           String
+  hidden         Boolean      @default(false) // durch Moderation ausgeblendet
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Forum
+// ─────────────────────────────────────────────────────────────
+
+model ForumCategory {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+
+  threads ForumThread[]
+}
+
+enum ContentStatus {
+  VISIBLE
+  PENDING_REVIEW // durch Inhaltsfilter zurückgehalten
+  HIDDEN
+  REMOVED
+}
+
+model ForumThread {
+  id         String        @id @default(cuid())
+  categoryId String
+  category   ForumCategory @relation(fields: [categoryId], references: [id])
+  authorId   String
+  author     User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  title      String
+  status     ContentStatus @default(VISIBLE)
+  locked     Boolean       @default(false)
+  pinned     Boolean       @default(false)
+  lastPostAt DateTime      @default(now())
+  createdAt  DateTime      @default(now())
+
+  posts ForumPost[]
+
+  @@index([categoryId, status, lastPostAt])
+}
+
+model ForumPost {
+  id        String        @id @default(cuid())
+  threadId  String
+  thread    ForumThread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body      String
+  status    ContentStatus @default(VISIBLE)
+  flagReason String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([threadId, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Meldungen, Audit-Log, Einstellungen
+// ─────────────────────────────────────────────────────────────
+
+enum ReportTarget {
+  PROFILE
+  IMAGE
+  LISTING
+  THREAD
+  POST
+  MESSAGE
+  USER
+  AD
+}
+
+enum ReportReason {
+  MINOR // Verdacht auf Minderjährigkeit
+  COERCION // Verdacht auf Zwang / Menschenhandel
+  FRAUD // Betrug
+  IDENTITY_MISUSE // Identitätsmissbrauch / Fake
+  NON_CONSENSUAL_IMAGE // Bild ohne Einwilligung
+  PERSONAL_DATA // Veröffentlichung privater Daten
+  DEFAMATION // Unbelegte Anschuldigung
+  ILLEGAL_CONTENT // Sonstiger rechtswidriger Inhalt
+  SPAM
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+model Report {
+  id           String       @id @default(cuid())
+  reporterId   String?
+  reporter     User?        @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: SetNull)
+  reporterEmail String?
+  targetType   ReportTarget
+  targetId     String
+  reason       ReportReason
+  details      String
+  priority     Int          @default(0) // höher = dringender
+  status       ReportStatus @default(OPEN)
+  handlerId    String?
+  handler      User?        @relation("ReportHandler", fields: [handlerId], references: [id], onDelete: SetNull)
+  resolution   String?
+  resolvedAt   DateTime?
+  createdAt    DateTime     @default(now())
+
+  @@index([status, priority])
+  @@index([targetType, targetId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action     String
+  targetType String?
+  targetId   String?
+  details    Json?
+  ipHash     String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorId])
+  @@index([targetType, targetId])
+}
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
