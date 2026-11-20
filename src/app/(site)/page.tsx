@@ -9,7 +9,8 @@ import { ProfileCard } from "@/components/profiles/profile-card";
 import { MarqueeBanner } from "@/components/home/marquee-banner";
 import { getTopProfiles } from "@/lib/queries/top-profiles";
 import { Button } from "@/components/ui/button";
-import { Input, Select } from "@/components/ui/input";
+import { Input } from "@/components/ui/input";
+import { CategorySelect } from "@/components/home/category-select";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ export default async function HomePage() {
   const [profiles, categories, top] = await Promise.all([
     db.profile.findMany({ where: publicProfileWhere(), orderBy: { publishedAt: "desc" }, take: 24, select: cardSelect }),
     db.category.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
-    getTopProfiles(10),
+    getTopProfiles(10, 30, "frauen"),
   ]);
   await trackProfiles([...profiles, ...top].map((p) => p.id), "impressions");
 
@@ -45,11 +46,7 @@ export default async function HomePage() {
         <form action="/suche" className="grid gap-3 rounded-xl border border-border bg-surface p-3 sm:grid-cols-[1fr_1fr_auto]">
           <label className="sr-only" htmlFor="hero-city">Stadt</label>
           <Input id="hero-city" name="stadt" placeholder="Stadt, z. B. Berlin" className="h-12 border-transparent bg-background-alt" />
-          <label className="sr-only" htmlFor="hero-cat">Kategorie</label>
-          <Select id="hero-cat" name="kategorie" className="h-12 border-transparent bg-background-alt" defaultValue="">
-            <option value="">Alle Kategorien</option>
-            {categories.map((c) => <option key={c.id} value={c.slug}>{c.name}</option>)}
-          </Select>
+          <CategorySelect categories={categories.map((c) => ({ slug: c.slug, name: c.name }))} />
           <Button size="lg" type="submit" className="h-12 sm:px-10"><Search /> Suchen</Button>
         </form>
 
