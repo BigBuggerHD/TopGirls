@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 export default async function HomePage() {
   await runHousekeeping();
   const [profiles, categories, top] = await Promise.all([
-    db.profile.findMany({ where: publicProfileWhere(), orderBy: { publishedAt: "desc" }, take: 24, select: cardSelect }),
+    db.profile.findMany({ where: { AND: [publicProfileWhere(), { category: { slug: "frauen" } }] }, orderBy: { publishedAt: "desc" }, take: 24, select: cardSelect }),
     db.category.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
     getTopProfiles(10, 30, "frauen"),
   ]);
@@ -60,7 +60,7 @@ export default async function HomePage() {
             {profiles.map((p, i) => <ProfileCard key={p.id} p={p} priority={i < 4} />)}
           </div>
           <div className="mt-8 flex justify-center">
-            <Button asChild variant="outline"><Link href="/suche">Alle Anzeigen ansehen <ArrowRight /></Link></Button>
+            <Button asChild variant="outline"><Link href="/frauen">Alle Frauen ansehen <ArrowRight /></Link></Button>
           </div>
         </section>
       </div>
