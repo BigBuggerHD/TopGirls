@@ -17,7 +17,7 @@ function CatForm({ kind, c }: { kind: string; c?: Cat }) {
       <label>Slug<input name="slug" defaultValue={c?.slug} className={`${inputCls} w-full`} /></label>
       <label>Beschreibung<input name="description" defaultValue={c?.description ?? ""} className={`${inputCls} w-full`} /></label>
       <label>Sortierung<input name="sortOrder" type="number" defaultValue={c?.sortOrder ?? 0} className={`${inputCls} w-full`} /></label>
-      <label className="flex items-center gap-1.5 pb-2"><input type="checkbox" name="active" defaultChecked={c?.active ?? true} className="accent-[#C6A76B]" /> aktiv</label>
+      <label className="flex items-center gap-1.5 pb-2"><input type="checkbox" name="active" defaultChecked={c?.active ?? true} className="accent-[#F3C2C6]" /> aktiv</label>
       <Button size="sm">{c ? "Speichern" : "Anlegen"}</Button>
     </form>
   );

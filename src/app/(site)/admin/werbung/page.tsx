@@ -31,7 +31,7 @@ function PlacementForm({ p }: { p?: AdPlacement }) {
       <label>Token/Tag<input name="tokenCostPerDay" type="number" defaultValue={p?.tokenCostPerDay ?? 20} className={`${inputCls} w-full`} /></label>
       <label>Priorität<input name="priority" type="number" defaultValue={p?.priority ?? 0} className={`${inputCls} w-full`} /></label>
       <label className="sm:col-span-3 xl:col-span-6">Beschreibung<input name="description" defaultValue={p?.description ?? ""} className={`${inputCls} w-full`} /></label>
-      <label className="flex items-center gap-2"><input type="checkbox" name="active" defaultChecked={p?.active ?? true} className="accent-[#C6A76B]" /> aktiv</label>
+      <label className="flex items-center gap-2"><input type="checkbox" name="active" defaultChecked={p?.active ?? true} className="accent-[#F3C2C6]" /> aktiv</label>
       <Button size="sm" className="xl:col-span-2">{p ? "Speichern" : "Werbefläche anlegen"}</Button>
     </form>
   );

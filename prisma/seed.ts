@@ -40,11 +40,11 @@ async function put(key: string, body: Buffer, contentType: string) {
 
 // ── Generierte, abstrakte Platzhalterbilder im Dark-Luxury-Stil ──
 const PALETTES = [
-  ["#2b1d14", "#c6a76b", "#0d0d0d"],
+  ["#2b1d14", "#F3C2C6", "#0d0d0d"],
   ["#1f1526", "#8e7cc3", "#0d0d0d"],
   ["#2a1519", "#c98a95", "#0d0d0d"],
   ["#141c22", "#7fa3b5", "#0d0d0d"],
-  ["#221c10", "#dcc394", "#0d0d0d"],
+  ["#221c10", "#F8D9DC", "#0d0d0d"],
   ["#1b1b1b", "#a3a3a3", "#0d0d0d"],
 ];
 
@@ -58,7 +58,7 @@ function artSvg(seed: number, label: string, w = 900, h = 1200) {
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${c}"/></linearGradient>
     <filter id="blur"><feGaussianBlur stdDeviation="60"/></filter>
-    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E8D3A6"/><stop offset=".5" stop-color="#C6A76B"/><stop offset="1" stop-color="#9E8350"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FBE3E5"/><stop offset=".5" stop-color="#F3C2C6"/><stop offset="1" stop-color="#D99BA2"/></linearGradient>
   </defs>
   <rect width="${w}" height="${h}" fill="url(#bg)"/>
   <g filter="url(#blur)">${circles}</g>
@@ -401,7 +401,7 @@ async function main() {
 
   // ── Identitätsprüfung (ausstehend) ──
   const docKey = `private/verifications/${newProvider.id}/${randomUUID()}.jpg`;
-  await put(docKey, await sharp(Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500"><rect width="800" height="500" fill="#1e1e1e"/><text x="400" y="260" text-anchor="middle" font-family="Arial" font-size="40" fill="#C6A76B">DEMO-DOKUMENT (fiktiv)</text></svg>`)).jpeg().toBuffer(), "image/jpeg");
+  await put(docKey, await sharp(Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500"><rect width="800" height="500" fill="#1e1e1e"/><text x="400" y="260" text-anchor="middle" font-family="Arial" font-size="40" fill="#F3C2C6">DEMO-DOKUMENT (fiktiv)</text></svg>`)).jpeg().toBuffer(), "image/jpeg");
   await db.identityVerification.create({ data: { userId: newProvider.id, docType: "ID_CARD", documentKey: docKey, birthYear: 2002, status: "PENDING" } });
 
   await db.notification.createMany({ data: [

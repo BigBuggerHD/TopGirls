@@ -34,7 +34,7 @@ export default async function FilterDetail({ params, searchParams }: { params: P
                   <label>Bezeichnung<input name="label" defaultValue={o.label} className={`${inputCls} w-48`} /></label>
                   <label>Wert (URL)<input name="value" defaultValue={o.value} className={`${inputCls} w-40`} /></label>
                   <label>Sort.<input name="sortOrder" type="number" defaultValue={o.sortOrder} className={`${inputCls} w-16`} /></label>
-                  <label className="flex items-center gap-1.5 pb-2"><input type="checkbox" name="active" defaultChecked={o.active} className="accent-[#C6A76B]" /> aktiv</label>
+                  <label className="flex items-center gap-1.5 pb-2"><input type="checkbox" name="active" defaultChecked={o.active} className="accent-[#F3C2C6]" /> aktiv</label>
                   <Button size="sm">Speichern</Button>
                   <span className="pb-2 text-subtle">{o._count.values}× verwendet</span>
                 </form>

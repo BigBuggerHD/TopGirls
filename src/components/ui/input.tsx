@@ -15,12 +15,12 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTML
 Textarea.displayName = "Textarea";
 
 export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HTMLSelectElement>>(({ className, children, ...props }, ref) => (
-  <select ref={ref} className={cn(base, "h-10 appearance-none bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23C6A76B%22 stroke-width=%222%22><path d=%22m6 9 6 6 6-6%22/></svg>')] bg-[length:12px] bg-[right_0.75rem_center] bg-no-repeat pr-9", className)} {...props}>
+  <select ref={ref} className={cn(base, "h-10 appearance-none bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23F3C2C6%22 stroke-width=%222%22><path d=%22m6 9 6 6 6-6%22/></svg>')] bg-[length:12px] bg-[right_0.75rem_center] bg-no-repeat pr-9", className)} {...props}>
     {children}
   </select>
 ));
 Select.displayName = "Select";
 
 export function Checkbox({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input type="checkbox" className={cn("size-4 shrink-0 rounded border-border accent-[#C6A76B]", className)} {...props} />;
+  return <input type="checkbox" className={cn("size-4 shrink-0 rounded border-border accent-[#F3C2C6]", className)} {...props} />;
 }

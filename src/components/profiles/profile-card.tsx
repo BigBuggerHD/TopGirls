@@ -15,7 +15,7 @@ export function ProfileCard({ p, sponsored = false, priority = false }: { p: Pro
       href={`/profil/${p.slug}`}
       className={cn(
         "group relative block overflow-hidden rounded-xl border bg-surface transition-all duration-300 hover:-translate-y-0.5",
-        highlight || premium ? "border-gold/60 shadow-[0_0_0_1px_rgba(198,167,107,0.25),0_10px_40px_-12px_rgba(198,167,107,0.35)]" : "border-border hover:border-border-strong",
+        highlight || premium ? "border-gold/60 shadow-[0_0_0_1px_rgba(243,194,198,0.25),0_10px_40px_-12px_rgba(243,194,198,0.35)]" : "border-border hover:border-border-strong",
       )}
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-surface-2">

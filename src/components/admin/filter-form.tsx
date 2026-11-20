@@ -23,11 +23,11 @@ export function FilterForm({ f, categories, back }: { f?: F; categories: { id: s
       <label>Hilfetext<input name="helpText" defaultValue={f?.helpText ?? ""} className={`${inputCls} w-full`} /></label>
       <fieldset className="sm:col-span-2 lg:col-span-4">
         <legend className="mb-1">Kategorien</legend>
-        <div className="flex flex-wrap gap-3">{categories.map((c) => <label key={c.id} className="flex items-center gap-1.5"><input type="checkbox" name="categories" value={c.id} defaultChecked={f?.categoryIds.includes(c.id)} className="accent-[#C6A76B]" />{c.name}</label>)}</div>
+        <div className="flex flex-wrap gap-3">{categories.map((c) => <label key={c.id} className="flex items-center gap-1.5"><input type="checkbox" name="categories" value={c.id} defaultChecked={f?.categoryIds.includes(c.id)} className="accent-[#F3C2C6]" />{c.name}</label>)}</div>
       </fieldset>
       <div className="flex flex-wrap items-center gap-4 sm:col-span-2 lg:col-span-4">
-        <label className="flex items-center gap-1.5"><input type="checkbox" name="active" defaultChecked={f?.active ?? true} className="accent-[#C6A76B]" /> aktiv</label>
-        <label className="flex items-center gap-1.5"><input type="checkbox" name="showInSearch" defaultChecked={f?.showInSearch ?? true} className="accent-[#C6A76B]" /> in der Suche anzeigen</label>
+        <label className="flex items-center gap-1.5"><input type="checkbox" name="active" defaultChecked={f?.active ?? true} className="accent-[#F3C2C6]" /> aktiv</label>
+        <label className="flex items-center gap-1.5"><input type="checkbox" name="showInSearch" defaultChecked={f?.showInSearch ?? true} className="accent-[#F3C2C6]" /> in der Suche anzeigen</label>
         <Button size="sm">{f ? "Speichern" : "Filter anlegen"}</Button>
       </div>
     </form>

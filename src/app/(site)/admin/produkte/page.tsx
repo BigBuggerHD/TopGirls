@@ -17,7 +17,7 @@ function PackageForm({ p }: { p?: TokenPackage }) {
       <label>Bonus<input name="bonusTokens" type="number" defaultValue={p?.bonusTokens ?? 0} className={`${inputCls} w-full`} /></label>
       <label>Preis (€)<input name="price" defaultValue={p ? (p.priceCents / 100).toFixed(2).replace(".", ",") : ""} required className={`${inputCls} w-full`} /></label>
       <label>Sort.<input name="sortOrder" type="number" defaultValue={p?.sortOrder ?? 0} className={`${inputCls} w-full`} /></label>
-      <label className="flex items-center gap-1.5 pb-2"><input type="checkbox" name="active" defaultChecked={p?.active ?? true} className="accent-[#C6A76B]" /> aktiv</label>
+      <label className="flex items-center gap-1.5 pb-2"><input type="checkbox" name="active" defaultChecked={p?.active ?? true} className="accent-[#F3C2C6]" /> aktiv</label>
       <Button size="sm">{p ? "Speichern" : "Anlegen"}</Button>
     </form>
   );
@@ -42,7 +42,7 @@ export default async function ProductsPage({ searchParams }: { searchParams: Pro
             <label>Token<input name="tokenCost" type="number" defaultValue={p.tokenCost} className={`${inputCls} w-full`} /></label>
             <label>Tage<input name="durationDays" type="number" defaultValue={p.durationDays} className={`${inputCls} w-full`} /></label>
             <label>Priorität<input name="priority" type="number" defaultValue={p.priority} className={`${inputCls} w-full`} /></label>
-            <label className="flex items-center gap-1.5 pb-2"><input type="checkbox" name="active" defaultChecked={p.active} className="accent-[#C6A76B]" /> aktiv</label>
+            <label className="flex items-center gap-1.5 pb-2"><input type="checkbox" name="active" defaultChecked={p.active} className="accent-[#F3C2C6]" /> aktiv</label>
             <Button size="sm">Speichern</Button>
           </form>
         ))}

@@ -5,7 +5,7 @@ import { useState } from "react";
  * Schlanke Einzelreihen-Liniengrafik (SVG) mit Fadenkreuz-Tooltip.
  * Unterschiedlich skalierte Kennzahlen werden als Small Multiples (je ein Chart) dargestellt – keine Doppelachse.
  */
-export function LineChart({ data, label, color = "#C6A76B" }: { data: { date: string; value: number }[]; label: string; color?: string }) {
+export function LineChart({ data, label, color = "#F3C2C6" }: { data: { date: string; value: number }[]; label: string; color?: string }) {
   const [hover, setHover] = useState<number | null>(null);
   const W = 600, H = 180, P = { l: 40, r: 12, t: 12, b: 24 };
   const max = Math.max(1, ...data.map((d) => d.value));

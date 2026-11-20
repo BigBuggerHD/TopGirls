@@ -9,7 +9,7 @@ export default async function AgeGatePage({ searchParams }: { searchParams: Prom
   const { next } = await searchParams;
   return (
     <main id="inhalt" className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-12">
-      <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(198,167,107,0.14),transparent_60%),radial-gradient(ellipse_at_bottom,rgba(142,124,195,0.08),transparent_55%)]" />
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(243,194,198,0.14),transparent_60%),radial-gradient(ellipse_at_bottom,rgba(142,124,195,0.08),transparent_55%)]" />
       <div className="relative w-full max-w-xl text-center">
         <LogoMark className="mx-auto size-20" />
         <p className="mt-6 text-xs uppercase tracking-[0.5em] text-gold">Nur für Erwachsene</p>

@@ -24,7 +24,7 @@ export default async function SettingsAdminPage({ searchParams }: { searchParams
         <HiddenBack path="/admin/einstellungen" />
         {(Object.keys(DEFAULT_SETTINGS) as (keyof typeof DEFAULT_SETTINGS)[]).map((k) => {
           const v = s[k];
-          if (typeof v === "boolean") return <label key={k} className="flex items-center gap-2 text-sm"><input type="checkbox" name={k} defaultChecked={v} className="size-4 accent-[#C6A76B]" /> {LABELS[k]}</label>;
+          if (typeof v === "boolean") return <label key={k} className="flex items-center gap-2 text-sm"><input type="checkbox" name={k} defaultChecked={v} className="size-4 accent-[#F3C2C6]" /> {LABELS[k]}</label>;
           return <label key={k} className="text-sm">{LABELS[k]}<input name={k} type={typeof v === "number" ? "number" : "text"} defaultValue={String(v)} className={`${inputCls} mt-1 w-full`} /></label>;
         })}
         <div className="sm:col-span-2"><Button>Einstellungen speichern</Button></div>

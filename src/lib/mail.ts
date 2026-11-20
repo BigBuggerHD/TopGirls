@@ -22,10 +22,10 @@ export function layout(title: string, bodyHtml: string, cta?: { label: string; u
   return `<!doctype html><html lang="de"><body style="margin:0;background:#0D0D0D;font-family:Helvetica,Arial,sans-serif;color:#f5f5f5">
 <table width="100%" cellpadding="0" cellspacing="0" style="background:#0D0D0D;padding:32px 0"><tr><td align="center">
 <table width="560" cellpadding="0" cellspacing="0" style="background:#121212;border:1px solid #2a2a2a;border-radius:12px;padding:40px">
-<tr><td style="font-family:Georgia,serif;font-size:28px;letter-spacing:4px;color:#C6A76B;text-align:center;padding-bottom:24px">TOP GIRLS</td></tr>
+<tr><td style="font-family:Georgia,serif;font-size:28px;letter-spacing:4px;color:#F3C2C6;text-align:center;padding-bottom:24px">TOP GIRLS</td></tr>
 <tr><td style="font-size:20px;color:#fff;padding-bottom:16px">${esc(title)}</td></tr>
 <tr><td style="font-size:15px;line-height:1.6;color:#cfcfcf">${bodyHtml}</td></tr>
-${cta ? `<tr><td style="padding:28px 0" align="center"><a href="${esc(cta.url)}" style="background:#C6A76B;color:#0D0D0D;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:bold;display:inline-block">${esc(cta.label)}</a></td></tr>` : ""}
+${cta ? `<tr><td style="padding:28px 0" align="center"><a href="${esc(cta.url)}" style="background:#F3C2C6;color:#0D0D0D;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:bold;display:inline-block">${esc(cta.label)}</a></td></tr>` : ""}
 <tr><td style="font-size:12px;color:#7a7a7a;border-top:1px solid #2a2a2a;padding-top:20px">Diese E-Mail wurde automatisch von Top Girls versendet. Wenn du diese Aktion nicht ausgelöst hast, kannst du die Nachricht ignorieren.</td></tr>
 </table></td></tr></table></body></html>`;
 }

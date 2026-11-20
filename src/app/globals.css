@@ -12,9 +12,9 @@
   --color-foreground: #f5f5f5;
   --color-muted: #a3a3a3;
   --color-subtle: #737373;
-  --color-gold: #c6a76b;
-  --color-gold-light: #dcc394;
-  --color-gold-dark: #9e8350;
+  --color-gold: #F3C2C6;
+  --color-gold-light: #F8D9DC;
+  --color-gold-dark: #D99BA2;
   --color-rose: #c98a95;
   --color-violet: #8e7cc3;
   --color-danger: #e0626b;
@@ -53,7 +53,7 @@
 }
 
 @utility text-gold-gradient {
-  background: linear-gradient(135deg, #e8d3a6 0%, #c6a76b 45%, #9e8350 100%);
+  background: linear-gradient(135deg, #FBE3E5 0%, #F3C2C6 45%, #D99BA2 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

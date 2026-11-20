@@ -31,7 +31,7 @@ export default async function HomePage() {
     <>
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-border">
-        <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_20%_0%,rgba(198,167,107,0.16),transparent_55%),radial-gradient(ellipse_at_90%_100%,rgba(201,138,149,0.08),transparent_50%)]" />
+        <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_20%_0%,rgba(243,194,198,0.16),transparent_55%),radial-gradient(ellipse_at_90%_100%,rgba(201,138,149,0.08),transparent_50%)]" />
         <div className="container-page relative py-20 sm:py-28">
           <p className="text-xs uppercase tracking-[0.5em] text-gold">Premium-Anzeigenportal</p>
           <h1 className="mt-5 max-w-3xl font-display text-5xl leading-[1.05] text-white sm:text-6xl lg:text-7xl">

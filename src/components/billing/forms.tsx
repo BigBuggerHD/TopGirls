@@ -95,7 +95,7 @@ export function CheckoutForm({ packages, providers, idempotencyKey }: { packages
         <div className="grid gap-3 sm:grid-cols-2">
           {providers.map((p) => (
             <label key={p.provider} className={cn("flex items-start gap-3 rounded-xl border p-4", !p.available ? "cursor-not-allowed opacity-50" : "cursor-pointer", prov === p.provider ? "border-gold bg-gold/5" : "border-border")}>
-              <input type="radio" name="provider" value={p.provider} disabled={!p.available} checked={prov === p.provider} onChange={() => setProv(p.provider)} className="mt-1 accent-[#C6A76B]" />
+              <input type="radio" name="provider" value={p.provider} disabled={!p.available} checked={prov === p.provider} onChange={() => setProv(p.provider)} className="mt-1 accent-[#F3C2C6]" />
               <span>
                 <span className="block text-sm font-medium text-white">{p.label}</span>
                 {!p.available ? <span className="block text-xs text-subtle">{p.reason}</span> : null}
