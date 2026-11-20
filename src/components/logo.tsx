@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 /** Top-Girls-Bildmarke: stilisierte Krone über einem „TG“-Monogramm in Gold. */
@@ -18,17 +19,14 @@ export function LogoMark({ className }: { className?: string }) {
   );
 }
 
-export function Logo({ className, compact = false }: { className?: string; compact?: boolean }) {
+/**
+ * Hauptlogo (Bildmarke mit Schriftzug „TOP GIRLS“).
+ * Die Datei hat einen transparenten Hintergrund und passt sich so dem Header an.
+ */
+export function Logo({ className }: { className?: string; compact?: boolean }) {
   return (
-    <span className={cn("inline-flex items-center gap-3", className)}>
-      <LogoMark />
-      {!compact && (
-        <span className="flex flex-col leading-none">
-          <span className="font-display text-2xl tracking-[0.22em] text-gold-gradient">TOP GIRLS</span>
-          <span className="mt-0.5 text-[9px] uppercase tracking-[0.45em] text-subtle">Premium-Anzeigen</span>
-        </span>
-      )}
-      <span className="sr-only">Top Girls</span>
+    <span className={cn("inline-flex items-center", className)}>
+      <Image src="/brand/logo-topgirls.png" alt="Top Girls" width={404} height={192} priority unoptimized className="h-14 w-auto sm:h-16" />
     </span>
   );
 }
