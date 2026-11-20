@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { storage } from "@/lib/storage";
+import { applyWatermark } from "@/lib/storage/watermark";
 import { getCurrentUser } from "@/lib/auth/session";
 import { can } from "@/lib/rbac";
 import { AGE_COOKIE, verifyAgeCookie } from "@/lib/age-gate";
@@ -50,8 +51,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ key
   }
 
   if (!allowed) return new NextResponse("Nicht gefunden", { status: 404 });
-  const data = await storage().get(key);
+  let data = await storage().get(key);
   if (!data) return new NextResponse("Nicht gefunden", { status: 404 });
+  // Sedcard-Bilder erhalten automatisch das Top-Girls-Wasserzeichen
+  if (key.startsWith("profiles/")) {
+    try {
+      data = await applyWatermark(key, data);
+    } catch (e) {
+      console.error("Wasserzeichen fehlgeschlagen", e);
+    }
+  }
 
   return new NextResponse(new Uint8Array(data), {
     headers: {
