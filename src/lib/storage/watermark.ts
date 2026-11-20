@@ -9,9 +9,9 @@ import sharp from "sharp";
  * Dadurch gilt eine Änderung der Einstellungen sofort für alle Bilder.
  */
 export const WATERMARK = {
-  opacity: 0.4, // Deckkraft (0 = unsichtbar, 1 = voll deckend)
-  topWidth: 0.22, // Breite von „TOP“ relativ zur Bildbreite
-  girlsWidth: 0.32, // Breite von „GIRLS“ relativ zur Bildbreite
+  opacity: 0.3, // Deckkraft (0 = unsichtbar, 1 = voll deckend)
+  topWidth: 0.3, // Breite von „TOP“ relativ zur Bildbreite
+  girlsWidth: 0.44, // Breite von „GIRLS“ relativ zur Bildbreite
   margin: 0.045, // Abstand zum Rand relativ zur Bildbreite
 };
 
