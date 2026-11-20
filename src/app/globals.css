@@ -81,6 +81,6 @@
   to { transform: translateX(-50%); }
 }
 @utility animate-marquee {
-  animation: tg-marquee 60s linear infinite;
+  animation: tg-marquee 90s linear infinite;
   @media (prefers-reduced-motion: reduce) { animation: none; }
 }

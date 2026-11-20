@@ -1,46 +1,31 @@
-import Link from "next/link";
-import Image from "next/image";
-import { MapPin } from "lucide-react";
-import { mediaUrl } from "@/lib/media";
+import { ProfileCard } from "@/components/profiles/profile-card";
 import type { ProfileCardData } from "@/lib/queries/profiles";
 
 /**
  * Laufband mit den Top-Sedcards (meiste Profilaufrufe).
- * Inhalt wird zweimal gerendert, damit die Endlos-Animation nahtlos ist.
- * Bei „Bewegung reduzieren“ (Betriebssystem-Einstellung) steht das Band still und ist horizontal scrollbar.
+ * Die Karten sind exakt so breit wie die Sedcards im Raster darunter: Die Breite wird über
+ * Container-Query-Einheiten (cqw) aus der Bandbreite und der Spaltenzahl des Rasters berechnet
+ * (1 / 2 / 3 / 4 Spalten, Abstände 1rem bzw. 1,25rem – identisch zum Raster).
+ * Der Inhalt wird zweimal gerendert, damit die Endlos-Animation nahtlos ist.
+ * Bei „Bewegung reduzieren“ steht das Band still und ist horizontal scrollbar.
  */
+const ITEM =
+  "w-[100cqw] shrink-0 sm:w-[calc((100cqw-1.25rem)/2)] lg:w-[calc((100cqw-2.5rem)/3)] 2xl:w-[calc((100cqw-3.75rem)/4)]";
+
 export function MarqueeBanner({ profiles }: { profiles: ProfileCardData[] }) {
   if (profiles.length === 0) return null;
   const row = (hidden: boolean) => (
-    <ul className="flex shrink-0 gap-3 pr-3" aria-hidden={hidden || undefined}>
-      {profiles.map((p, i) => {
-        const img = mediaUrl(p.images[0]?.thumbKey);
-        return (
-          <li key={p.id}>
-            <Link
-              href={`/profil/${p.slug}`}
-              tabIndex={hidden ? -1 : undefined}
-              className="group/item flex w-64 items-center gap-3 rounded-lg border border-border bg-background-alt p-2 pr-4 transition-colors hover:border-border-strong"
-            >
-              <span className="relative block h-20 w-16 shrink-0 overflow-hidden rounded-md bg-surface-2">
-                {img ? <Image src={img} alt="" fill sizes="64px" className="object-cover" unoptimized /> : null}
-              </span>
-              <span className="min-w-0">
-                <span className="block text-[11px] font-semibold tracking-wider text-gold">Top {i + 1}</span>
-                <span className="block truncate font-display text-xl text-white">{p.stageName}{p.age ? <span className="text-base text-white/60">, {p.age}</span> : null}</span>
-                <span className="flex items-center gap-1 truncate text-xs text-muted"><MapPin className="size-3 shrink-0" /> {p.city}</span>
-              </span>
-            </Link>
-          </li>
-        );
-      })}
+    <ul className="flex shrink-0 gap-4 pr-4 sm:gap-5 sm:pr-5" aria-hidden={hidden || undefined}>
+      {profiles.map((p) => (
+        <li key={p.id} className={ITEM}>
+          <ProfileCard p={p} variant="banner" tabIndex={hidden ? -1 : undefined} />
+        </li>
+      ))}
     </ul>
   );
   return (
-    <section aria-label="Top 10 Sedcards" className="group relative overflow-hidden rounded-xl border border-border bg-surface py-3 motion-reduce:overflow-x-auto">
-      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-surface to-transparent motion-reduce:hidden" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-surface to-transparent motion-reduce:hidden" />
-      <div className="flex w-max animate-marquee pl-3 group-hover:[animation-play-state:paused] group-focus-within:[animation-play-state:paused]">
+    <section aria-label="Top 10 Sedcards" className="group @container overflow-hidden motion-reduce:overflow-x-auto">
+      <div className="flex w-max animate-marquee group-hover:[animation-play-state:paused] group-focus-within:[animation-play-state:paused]">
         {row(false)}
         <div className="flex motion-reduce:hidden">{row(true)}</div>
       </div>

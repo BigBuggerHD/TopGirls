@@ -4,11 +4,16 @@ import { BadgeCheck, MapPin } from "lucide-react";
 import { mediaUrl } from "@/lib/media";
 import type { ProfileCardData } from "@/lib/queries/profiles";
 
-export function ProfileCard({ p, sponsored = false, priority = false }: { p: ProfileCardData; sponsored?: boolean; priority?: boolean }) {
+/**
+ * variant "banner": nur Name, Alter, Ort und Prüfstatus (für das Laufband auf der Startseite).
+ */
+export function ProfileCard({ p, sponsored = false, priority = false, variant = "default", tabIndex }: { p: ProfileCardData; sponsored?: boolean; priority?: boolean; variant?: "default" | "banner"; tabIndex?: number }) {
+  const banner = variant === "banner";
   const img = mediaUrl(p.images[0]?.thumbKey);
   return (
     <Link
       href={`/profil/${p.slug}`}
+      tabIndex={tabIndex}
       className="group relative block overflow-hidden rounded-xl border border-border bg-surface transition-colors duration-300 hover:border-border-strong"
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-surface-2">
@@ -21,12 +26,17 @@ export function ProfileCard({ p, sponsored = false, priority = false }: { p: Pro
         {sponsored ? <span className="absolute left-2.5 top-2.5 rounded-full bg-black/70 px-2 py-0.5 text-[10px] uppercase tracking-wider text-muted ring-1 ring-white/10">Gesponsert</span> : null}
         <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
           <p className="flex items-center gap-1.5 font-display text-2xl text-white sm:text-3xl">
-            {p.stageName}
-            {p.age ? <span className="text-lg text-white/70 sm:text-xl">, {p.age}</span> : null}
-            {p.verified ? <BadgeCheck className="size-4 text-gold" aria-label="Verifiziert" /> : null}
+            <span>{p.stageName}{p.age ? <span className="text-lg text-white/70 sm:text-xl">, {p.age}</span> : null}</span>
+            {!banner && p.verified ? <BadgeCheck className="size-4 text-gold" aria-label="Verifiziert" /> : null}
           </p>
-          <p className="mt-1 flex items-center gap-1 text-sm text-white/75"><MapPin className="size-3.5" /> {p.city} · {p.category.name}</p>
-          {p.headline ? <p className="mt-1 line-clamp-1 text-sm text-white/60">{p.headline}</p> : null}
+          <p className="mt-1 flex items-center gap-1 text-sm text-white/75"><MapPin className="size-3.5" /> {p.city}{banner ? "" : ` · ${p.category.name}`}</p>
+          {banner ? (
+            p.verified ? (
+              <p className="mt-2 flex items-center gap-1.5 text-sm text-gold"><BadgeCheck className="size-4" /> Identität geprüft</p>
+            ) : (
+              <p className="mt-2 text-sm text-white/50">Identität nicht geprüft</p>
+            )
+          ) : p.headline ? <p className="mt-1 line-clamp-1 text-sm text-white/60">{p.headline}</p> : null}
         </div>
       </div>
     </Link>
