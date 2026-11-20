@@ -7,6 +7,7 @@ import type { ProfileCardData } from "@/lib/queries/profiles";
  * Container-Query-Einheiten (cqw) aus der Bandbreite und der Spaltenzahl des Rasters berechnet
  * (1 / 2 / 3 / 4 Spalten, Abstände 1rem bzw. 1,25rem – identisch zum Raster).
  * Der Inhalt wird zweimal gerendert, damit die Endlos-Animation nahtlos ist.
+ * Links und rechts blendet eine Maske die Karten weich aus, damit sie nicht abrupt abgeschnitten wirken.
  * Bei „Bewegung reduzieren“ steht das Band still und ist horizontal scrollbar.
  */
 const ITEM =
@@ -24,7 +25,10 @@ export function MarqueeBanner({ profiles }: { profiles: ProfileCardData[] }) {
     </ul>
   );
   return (
-    <section aria-label="Top 10 Sedcards" className="group @container overflow-hidden motion-reduce:overflow-x-auto">
+    <section
+      aria-label="Top 10 Sedcards"
+      className="group @container overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_7%,black_93%,transparent)] motion-reduce:overflow-x-auto motion-reduce:[mask-image:none]"
+    >
       <div className="flex w-max animate-marquee group-hover:[animation-play-state:paused] group-focus-within:[animation-play-state:paused]">
         {row(false)}
         <div className="flex motion-reduce:hidden">{row(true)}</div>
