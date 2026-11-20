@@ -200,7 +200,7 @@ export function LocationStep({ profile }: { profile: { id: string; city: string;
 }
 
 type Avail = Record<string, { active?: boolean; from?: string; to?: string }>;
-export function ContactStep({ profile }: { profile: { id: string; contactPhone: string | null; contactWhatsapp: string | null; contactEmail: string | null; contactWebsite: string | null; showPhone: boolean; allowMessages: boolean; availabilityNote: string | null; availability: Avail } }) {
+export function ContactStep({ profile }: { profile: { id: string; contactPhone: string | null; contactWhatsapp: string | null; contactEmail: string | null; contactWebsite: string | null; showPhone: boolean; allowMessages: boolean; availabilityNote: string | null; availability: Avail; prices: { label: string; amountCents: number }[]; priceNote: string | null } }) {
   return (
     <StepForm action={saveContactAction} profileId={profile.id}>
       {(s) => (
@@ -231,6 +231,25 @@ export function ContactStep({ profile }: { profile: { id: string; contactPhone: 
           </fieldset>
           <Field label="Hinweis zur Verfügbarkeit" name="availabilityNote" errors={s?.errors?.availabilityNote}>
             <Input id="availabilityNote" name="availabilityNote" defaultValue={profile.availabilityNote ?? ""} maxLength={300} />
+          </Field>
+          <fieldset className="space-y-2">
+            <legend className="mb-1 text-sm font-medium">Preise</legend>
+            <p className="text-xs text-subtle">Bis zu 8 Positionen, z. B. „1 Stunde“ – „250“. Leere Zeilen werden ignoriert.</p>
+            {Array.from({ length: 8 }, (_, i) => {
+              const r = profile.prices[i];
+              return (
+                <div key={i} className="grid grid-cols-[1fr_140px] gap-3">
+                  <Input name={`price_label_${i}`} defaultValue={r?.label ?? ""} placeholder={i === 0 ? "z. B. 1 Stunde" : ""} maxLength={60} aria-label={`Preis ${i + 1} – Bezeichnung`} />
+                  <div className="relative">
+                    <Input name={`price_amount_${i}`} defaultValue={r ? (r.amountCents / 100).toFixed(2).replace(".", ",").replace(",00", "") : ""} inputMode="decimal" placeholder="0" aria-label={`Preis ${i + 1} – Betrag in Euro`} className="pr-8" />
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-subtle">€</span>
+                  </div>
+                </div>
+              );
+            })}
+          </fieldset>
+          <Field label="Hinweis zu den Preisen" name="priceNote">
+            <Input id="priceNote" name="priceNote" defaultValue={profile.priceNote ?? ""} maxLength={300} placeholder="z. B. Preise sind Richtwerte, Details nach Absprache" />
           </Field>
         </>
       )}

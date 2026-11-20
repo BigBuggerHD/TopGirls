@@ -7,6 +7,7 @@ import { mediaUrl } from "@/lib/media";
 import { formatDate } from "@/lib/format";
 import { PROFILE_STATUS, VERIFICATION_STATUS } from "@/lib/labels";
 import { cn } from "@/lib/utils";
+import { parsePrices } from "@/lib/prices";
 import { deleteImageAction, deleteProfileAction, getPublishChecklist, pauseProfileAction, setCoverImageAction } from "@/actions/profiles";
 import { AttributesStep, BasicsStep, ContactStep, DescriptionStep, ImagesStep, LocationStep, ModelConsentUpload, SubmitStep } from "@/components/dashboard/sedcard-steps";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +17,7 @@ import { Gallery } from "@/components/profiles/gallery";
 
 export const metadata = { title: "Sedcard bearbeiten" };
 
-const STEPS = ["Profildaten", "Beschreibung", "Bilder", "Eigenschaften", "Standort", "Kontakt & Zeiten", "Vorschau & Veröffentlichung"];
+const STEPS = ["Profildaten", "Beschreibung", "Bilder", "Eigenschaften", "Standort", "Kontakt, Zeiten & Preise", "Vorschau & Veröffentlichung"];
 
 export default async function EditSedcardPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ schritt?: string }> }) {
   const user = await requirePermission("profile.own");
@@ -97,7 +98,7 @@ export default async function EditSedcardPage({ params, searchParams }: { params
           />
         )}
         {step === 5 && <LocationStep profile={p} />}
-        {step === 6 && <ContactStep profile={{ ...p, availability: (p.availability ?? {}) as Record<string, { active?: boolean; from?: string; to?: string }> }} />}
+        {step === 6 && <ContactStep profile={{ ...p, availability: (p.availability ?? {}) as Record<string, { active?: boolean; from?: string; to?: string }>, prices: parsePrices(p.prices) }} />}
         {step === 7 && checklist && (
           <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
             <div>

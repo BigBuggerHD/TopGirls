@@ -14,7 +14,9 @@ import { storage } from "@/lib/storage";
 import { rateLimit } from "@/lib/rate-limit";
 import { audit } from "@/lib/audit";
 import { WEEKDAYS } from "@/lib/labels";
+import { MAX_PRICE_ROWS, type PriceRow } from "@/lib/prices";
 import {
+  parseEuroToCents,
   profileBasicsSchema, profileContactSchema, profileDescriptionSchema, profileLocationSchema, zodErrors, type ActionState,
 } from "@/lib/validation";
 
@@ -129,9 +131,22 @@ export async function saveContactAction(_: ActionState, fd: FormData): Promise<A
       contactPhone: d.contactPhone ?? null, contactWhatsapp: d.contactWhatsapp ?? null, contactEmail: d.contactEmail ?? null,
       contactWebsite: d.contactWebsite ?? null, showPhone: d.showPhone === "on", allowMessages: d.allowMessages === "on",
       availabilityNote: d.availabilityNote, availability,
+      prices: readPrices(fd),
+      priceNote: String(fd.get("priceNote") ?? "").trim().slice(0, 300) || null,
     },
   });
   return done(p.id, 6, fd);
+}
+
+/** Liest die Preiszeilen aus dem Formular (price_label_N / price_amount_N). Unvollständige Zeilen werden ignoriert. */
+function readPrices(fd: FormData): PriceRow[] {
+  const rows: PriceRow[] = [];
+  for (let i = 0; i < MAX_PRICE_ROWS; i++) {
+    const label = String(fd.get(`price_label_${i}`) ?? "").trim().slice(0, 60);
+    const amount = parseEuroToCents(String(fd.get(`price_amount_${i}`) ?? "").trim());
+    if (label && amount != null && amount >= 0 && amount <= 10_000_000) rows.push({ label, amountCents: amount });
+  }
+  return rows;
 }
 
 export async function saveAttributesAction(_: ActionState, fd: FormData): Promise<ActionState> {

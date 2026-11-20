@@ -241,6 +241,8 @@ model Profile {
   languages        String[]      @default([])
   availability     Json? // { mo: {from,to,active}, ... }
   availabilityNote String?
+  prices           Json? // [{ label: "1 Stunde", amountCents: 20000 }, …]
+  priceNote        String?
   contactPhone     String?
   contactWhatsapp  String?
   contactEmail     String?

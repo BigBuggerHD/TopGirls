@@ -171,6 +171,13 @@ async function main() {
     filters[f.key] = { id: created.id, type: created.type, options: created.options.map((o) => ({ id: o.id, value: o.value })) };
   }
 
+  // „Leistungen“ wird per Migration angelegt (siehe prisma/migrations/*_sedcard_preise_leistungen) – hier mit „Frauen“ verknüpfen
+  const services = await db.filterDefinition.findUnique({ where: { key: "leistungen" }, include: { options: true } });
+  if (services) {
+    await db.filterCategory.createMany({ data: [{ filterId: services.id, categoryId: cats["frauen"] }], skipDuplicates: true });
+    filters["leistungen"] = { id: services.id, type: services.type, options: services.options.map((o) => ({ id: o.id, value: o.value })) };
+  }
+
   // ── Profile ──
   const CITIES = [["Berlin", "10115", "Berlin"], ["Hamburg", "20095", "Hamburg"], ["München", "80331", "Bayern"], ["Köln", "50667", "Nordrhein-Westfalen"], ["Frankfurt am Main", "60311", "Hessen"], ["Düsseldorf", "40213", "Nordrhein-Westfalen"], ["Stuttgart", "70173", "Baden-Württemberg"], ["Leipzig", "04109", "Sachsen"]];
   const availability = { mo: { active: true, from: "12:00", to: "22:00" }, di: { active: true, from: "12:00", to: "22:00" }, mi: { active: false }, do: { active: true, from: "14:00", to: "23:00" }, fr: { active: true, from: "14:00", to: "02:00" }, sa: { active: true, from: "16:00", to: "02:00" }, so: { active: false } };
@@ -207,8 +214,17 @@ async function main() {
     const status = p.status ?? "PUBLISHED";
     const published = status === "PUBLISHED";
     const slug = `${p.name.toLowerCase().replace(/é/g, "e").replace(/[^a-z0-9]+/g, "-")}-${city.toLowerCase().replace(/ü/g, "ue").replace(/[^a-z0-9]+/g, "-")}-${i + 1}`;
+    const isWoman = p.cat === "frauen";
+    if (isWoman) {
+      const svc = [["dinner-date", "begleitung-events", "uebernachtung"], ["reisebegleitung", "dinner-date", "wellness"], ["massage", "girlfriend-experience", "dinner-date"], ["begleitung-events", "massage"]][i % 4];
+      p.attrs = { ...(p.attrs ?? {}), leistungen: svc };
+    }
+    const prices = isWoman
+      ? [{ label: "1 Stunde", amountCents: 25000 + (i % 3) * 5000 }, { label: "2 Stunden", amountCents: 45000 + (i % 3) * 8000 }, { label: "Dinner-Date (4 Stunden)", amountCents: 80000 }, { label: "Übernachtung", amountCents: 150000 }]
+      : null;
     const created = await db.profile.create({
       data: {
+        ...(prices ? { prices, priceNote: "Alle Preise verstehen sich als Richtwerte. Details nach persönlicher Absprache." } : {}),
         slug, ownerId: p.owner, categoryId: cats[p.cat], stageName: p.name, headline: p.headline, age: p.age ?? null,
         description: DESCRIPTIONS[p.cat === "clubs" || p.cat === "massagen" ? 2 : i % 2],
         city, postalCode: plz, region, languages: p.langs ?? ["Deutsch"], availability, availabilityNote: "Termine bitte mit mindestens 2 Stunden Vorlauf anfragen.",
