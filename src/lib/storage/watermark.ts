@@ -10,7 +10,7 @@ import sharp from "sharp";
  * Nach einer Änderung MEDIA_VERSION in src/lib/media.ts erhöhen, damit Browser die Bilder neu laden.
  */
 export const WATERMARK = {
-  opacity: 0.3, // Deckkraft (0 = unsichtbar, 1 = voll deckend)
+  opacity: 0.2, // Deckkraft (0 = unsichtbar, 1 = voll deckend)
   width: 0.7, // Breite der Silhouette relativ zur Bildbreite
 };
 
