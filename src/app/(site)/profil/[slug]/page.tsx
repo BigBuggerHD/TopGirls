@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BadgeCheck, Clock, Globe, Languages, Mail, MapPin } from "lucide-react";
+import { BadgeCheck, Car, Clock, Globe, House, Languages, Mail, MapPin } from "lucide-react";
+import { meetingTypes } from "@/lib/meeting";
 import { db } from "@/lib/db";
 import { publicProfileWhere } from "@/lib/queries/profiles";
 import { trackProfiles } from "@/lib/stats";
@@ -45,6 +46,7 @@ export default async function ProfilePage({ params }: Params) {
   const user = await getCurrentUser();
   await trackProfiles([p.id], "views");
 
+  const meeting = meetingTypes(p);
   const availability = (p.availability ?? {}) as Record<string, { active?: boolean; from?: string; to?: string }>;
   const hasAvailability = WEEKDAYS.some(([k]) => availability[k]?.active);
   const isBusinessOwner = ["AGENCY", "CLUB", "MASSAGE_STUDIO"].includes(p.owner.role);
@@ -61,6 +63,8 @@ export default async function ProfilePage({ params }: Params) {
           <div className="flex flex-wrap items-center gap-2">
             {p.verified ? <Badge variant="success"><BadgeCheck className="size-3" /> Verifiziert</Badge> : null}
             <Badge>{p.category.name}</Badge>
+            {meeting.incall ? <Badge><House className="size-3" /> Incall</Badge> : null}
+            {meeting.outcall ? <Badge><Car className="size-3" /> Outcall</Badge> : null}
           </div>
           <h1 className="mt-4 font-display text-5xl text-white">{p.stageName}{p.age ? <span className="text-3xl text-muted">, {p.age}</span> : null}</h1>
           {p.headline ? <p className="mt-2 text-lg text-gold-light">{p.headline}</p> : null}

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, BadgeCheck, Search, ShieldCheck } from "lucide-react";
+import { ArrowRight, BadgeCheck, Search } from "lucide-react";
+import { MeetingLegend } from "@/components/profiles/meeting-icons";
 import { db } from "@/lib/db";
 import { cardSelect, publicProfileWhere } from "@/lib/queries/profiles";
 import { runHousekeeping } from "@/lib/housekeeping";
@@ -56,7 +57,7 @@ export default async function HomePage() {
         <section aria-label="Sedcards" className="pt-4">
           <div className="mb-5 flex flex-wrap justify-end gap-x-6 gap-y-2 text-sm text-muted">
             <span className="flex items-center gap-2"><BadgeCheck className="size-4 text-gold" /> Identitätsgeprüfte Profile</span>
-            <span className="flex items-center gap-2"><ShieldCheck className="size-4 text-gold" /> Moderierte Inhalte</span>
+            <MeetingLegend />
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 2xl:grid-cols-4">
             {profiles.map((p, i) => <ProfileCard key={p.id} p={p} priority={i < 4} />)}

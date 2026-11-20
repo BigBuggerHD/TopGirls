@@ -1,6 +1,7 @@
 import "server-only";
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
+import { MEETING_FILTER_KEY } from "@/lib/meeting";
 
 export const PAGE_SIZE = 24;
 
@@ -17,6 +18,8 @@ export const cardSelect = {
   premiumUntil: true, highlightUntil: true, sponsoredUntil: true,
   category: { select: { name: true, slug: true } },
   images: { where: { status: "APPROVED" }, orderBy: [{ isCover: "desc" }, { sortOrder: "asc" }], take: 1, select: { thumbKey: true } },
+  // Für Incall/Outcall-Symbole (siehe src/lib/meeting.ts)
+  attributes: { where: { filter: { key: MEETING_FILTER_KEY } }, select: { options: { select: { option: { select: { value: true } } } } } },
 } satisfies Prisma.ProfileSelect;
 
 export type ProfileCardData = Prisma.ProfileGetPayload<{ select: typeof cardSelect }>;

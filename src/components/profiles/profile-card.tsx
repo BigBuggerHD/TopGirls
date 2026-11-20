@@ -3,6 +3,8 @@ import Image from "next/image";
 import { BadgeCheck, MapPin } from "lucide-react";
 import { mediaUrl } from "@/lib/media";
 import type { ProfileCardData } from "@/lib/queries/profiles";
+import { meetingTypes } from "@/lib/meeting";
+import { MeetingIcons } from "./meeting-icons";
 
 /**
  * variant "banner": nur Name, Alter, Ort und Prüfstatus (für das Laufband auf der Startseite).
@@ -23,6 +25,7 @@ export function ProfileCard({ p, sponsored = false, priority = false, variant = 
           <div className="flex h-full items-center justify-center font-display text-5xl text-gold/40">{p.stageName.slice(0, 1)}</div>
         )}
         <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+        <MeetingIcons {...meetingTypes(p)} className="absolute right-3 top-3" />
         {sponsored ? <span className="absolute left-2.5 top-2.5 rounded-full bg-black/70 px-2 py-0.5 text-[10px] uppercase tracking-wider text-muted ring-1 ring-white/10">Gesponsert</span> : null}
         <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
           <p className="flex items-center gap-1.5 font-display text-2xl text-white sm:text-3xl">
