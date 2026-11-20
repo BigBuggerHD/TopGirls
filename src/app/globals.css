@@ -46,10 +46,10 @@
 @utility container-page {
   margin-inline: auto;
   width: 100%;
-  max-width: 80rem;
+  max-width: 96rem;
   padding-inline: 1rem;
   @media (min-width: 640px) { padding-inline: 1.5rem; }
-  @media (min-width: 1024px) { padding-inline: 2rem; }
+  @media (min-width: 1024px) { padding-inline: 1.5rem; }
 }
 
 @utility text-gold-gradient {

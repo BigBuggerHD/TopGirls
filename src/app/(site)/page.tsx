@@ -80,7 +80,7 @@ export default async function HomePage() {
       {premium.length > 0 ? (
         <section className="container-page py-16">
           <SectionHead eyebrow="Ausgewählt" title="Premium-Anzeigen" href="/suche" />
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 2xl:grid-cols-4">
             {premium.map((p, i) => <ProfileCard key={p.id} p={p} priority={i < 4} />)}
           </div>
         </section>
@@ -90,7 +90,7 @@ export default async function HomePage() {
 
       <section className="container-page py-16">
         <SectionHead eyebrow="Neu bei Top Girls" title="Neueste Profile" href="/suche?sortierung=neu" />
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 2xl:grid-cols-4">
           {latest.map((p) => <ProfileCard key={p.id} p={p} />)}
         </div>
       </section>
