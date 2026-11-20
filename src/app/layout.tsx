@@ -19,8 +19,9 @@ export const viewport: Viewport = { themeColor: "#0D0D0D", colorScheme: "dark" }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="de-DE" className={`${inter.variable} ${cormorant.variable}`}>
-      <body className="min-h-screen">
+    <html lang="de-DE" className={`${inter.variable} ${cormorant.variable}`} suppressHydrationWarning>
+      {/* suppressHydrationWarning: Browser-Erweiterungen (z. B. Grammarly, Übersetzer, Dark Reader) fügen hier Attribute ein */}
+      <body className="min-h-screen" suppressHydrationWarning>
         <a href="#inhalt" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded focus:bg-gold focus:px-4 focus:py-2 focus:text-background">
           Zum Inhalt springen
         </a>
