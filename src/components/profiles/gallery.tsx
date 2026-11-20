@@ -32,7 +32,7 @@ export function Gallery({ images, name }: { images: { id: string; src: string; t
   return (
     <div className={cn("relative flex flex-col gap-2", images.length > 1 && "sm:pr-[5.5rem] lg:pr-[6.5rem]")}>
       <div className="relative aspect-[3/4] overflow-hidden rounded-xl border border-border bg-surface-2">
-        <Image src={images[active].src} alt={`${name} – Bild ${active + 1} von ${images.length}`} fill sizes="(min-width:1024px) 40vw, 100vw" className="object-cover" priority unoptimized />
+        <Image src={images[active].src} alt={`${name} – Bild ${active + 1} von ${images.length}`} fill sizes="(min-width:1024px) 55vw, 100vw" className="object-cover" priority unoptimized />
       </div>
       {thumbs}
     </div>
