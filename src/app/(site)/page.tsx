@@ -67,20 +67,6 @@ export default async function HomePage() {
         </section>
       </div>
 
-      {/* Inserenten */}
-      <section className="container-page py-16">
-        <div className="relative overflow-hidden rounded-2xl border border-gold/30 bg-gradient-to-br from-surface-2 via-surface to-background-alt p-8 sm:p-14">
-          <p className="text-xs uppercase tracking-[0.4em] text-gold">Für Inserenten</p>
-          <h2 className="mt-4 max-w-xl font-display text-4xl text-white">Präsentiere dich auf höchstem Niveau.</h2>
-          <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted">
-            Erstelle deine Sedcard in wenigen Schritten, buche Werbeflächen und behalte deine Statistiken im Blick. Für Agenturen, Clubs und Studios mit Mehrfachverwaltung.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Button asChild size="lg"><Link href="/registrieren">Jetzt inserieren</Link></Button>
-            <Button asChild size="lg" variant="outline"><Link href="/werbung">Werbung & Preise</Link></Button>
-          </div>
-        </div>
-      </section>
     </>
   );
 }
