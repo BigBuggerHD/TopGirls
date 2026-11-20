@@ -64,7 +64,7 @@ export default async function ProfilePage({ params }: Params) {
   const prices = parsePrices(p.prices);
   const services = p.attributes.find((a) => a.filter.key === SERVICES_KEY && a.filter.active)?.options.map((o) => o.option) ?? [];
 
-  // Eigenschaften als Kacheln (ohne „Leistungen“, die eine eigene Kachel haben)
+  // Eigenschaften (ohne „Leistungen“, die eine eigene Kachel haben)
   const traits = p.attributes
     .filter((a) => a.filter.active && a.filter.key !== SERVICES_KEY)
     .map((a) => ({
@@ -83,7 +83,7 @@ export default async function ProfilePage({ params }: Params) {
         <Link href="/" className="hover:text-gold">Startseite</Link> / <Link href={`/${p.category.slug}`} className="hover:text-gold">{p.category.name}</Link> / <span className="text-muted">{p.stageName}</span>
       </nav>
 
-      {/* Bilder links, Infos rechts – die Eigenschaften-Kacheln schließen unten mit dem Bild ab */}
+      {/* Bilder links, Infos rechts */}
       <div className="grid gap-8 lg:grid-cols-[minmax(0,6fr)_minmax(0,7fr)]">
         <Gallery name={p.stageName} images={p.images.map((i) => ({ id: i.id, src: mediaUrl(i.storageKey)!, thumb: mediaUrl(i.thumbKey)! }))} />
 
@@ -104,11 +104,11 @@ export default async function ProfilePage({ params }: Params) {
           <div className="gold-hairline my-6" />
 
           {traits.length ? (
-            <dl className="grid flex-1 auto-rows-fr grid-cols-2 gap-3 xl:grid-cols-3">
+            <dl className="grid content-start gap-x-8 gap-y-3 sm:grid-cols-2">
               {traits.map((t) => (
-                <div key={t.id} className="flex min-h-16 flex-col justify-center rounded-lg border border-border bg-surface px-4 py-3">
-                  <dt className="text-[11px] uppercase tracking-wider text-subtle">{t.label}</dt>
-                  <dd className="mt-1 text-sm font-medium text-foreground">{t.value}</dd>
+                <div key={t.id} className="flex justify-between gap-3 border-b border-border pb-2 text-sm">
+                  <dt className="text-subtle">{t.label}</dt>
+                  <dd className="text-right text-foreground">{t.value}</dd>
                 </div>
               ))}
             </dl>
