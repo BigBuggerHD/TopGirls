@@ -84,7 +84,7 @@ export default async function ProfilePage({ params }: Params) {
       </nav>
 
       {/* Bilder links, Infos rechts */}
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,6fr)_minmax(0,7fr)]">
         <Gallery name={p.stageName} images={p.images.map((i) => ({ id: i.id, src: mediaUrl(i.storageKey)!, thumb: mediaUrl(i.thumbKey)! }))} />
 
         <div className="flex min-w-0 flex-col">
