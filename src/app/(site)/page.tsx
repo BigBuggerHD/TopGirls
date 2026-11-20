@@ -6,6 +6,7 @@ import { runHousekeeping } from "@/lib/housekeeping";
 import { trackProfiles } from "@/lib/stats";
 import { ProfileCard } from "@/components/profiles/profile-card";
 import { MarqueeBanner } from "@/components/home/marquee-banner";
+import { getTopProfiles } from "@/lib/queries/top-profiles";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/input";
 
@@ -13,11 +14,12 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   await runHousekeeping();
-  const [profiles, categories] = await Promise.all([
+  const [profiles, categories, top] = await Promise.all([
     db.profile.findMany({ where: publicProfileWhere(), orderBy: { publishedAt: "desc" }, take: 24, select: cardSelect }),
     db.category.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
+    getTopProfiles(10),
   ]);
-  await trackProfiles(profiles.map((p) => p.id), "impressions");
+  await trackProfiles([...profiles, ...top].map((p) => p.id), "impressions");
 
   return (
     <>
@@ -35,8 +37,8 @@ export default async function HomePage() {
       </section>
 
       <div className="container-page space-y-6">
-        {/* Laufbanner – gleiche Breite wie die Sedcards */}
-        <MarqueeBanner />
+        {/* Laufband mit den Top-10-Sedcards – gleiche Breite wie die Sedcards */}
+        <MarqueeBanner profiles={top} />
 
         {/* Suche – gleiche Breite */}
         <form action="/suche" className="grid gap-3 rounded-xl border border-border bg-surface p-3 sm:grid-cols-[1fr_1fr_auto]">
