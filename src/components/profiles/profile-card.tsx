@@ -1,22 +1,15 @@
 import Link from "next/link";
 import Image from "next/image";
-import { BadgeCheck, Crown, MapPin } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { BadgeCheck, MapPin } from "lucide-react";
 import { mediaUrl } from "@/lib/media";
 import type { ProfileCardData } from "@/lib/queries/profiles";
 
 export function ProfileCard({ p, sponsored = false, priority = false }: { p: ProfileCardData; sponsored?: boolean; priority?: boolean }) {
-  const now = Date.now();
-  const premium = p.premiumUntil && p.premiumUntil.getTime() > now;
-  const highlight = p.highlightUntil && p.highlightUntil.getTime() > now;
   const img = mediaUrl(p.images[0]?.thumbKey);
   return (
     <Link
       href={`/profil/${p.slug}`}
-      className={cn(
-        "group relative block overflow-hidden rounded-xl border bg-surface transition-all duration-300 hover:-translate-y-0.5",
-        highlight || premium ? "border-gold/60 shadow-[0_0_0_1px_rgba(243,194,198,0.25),0_10px_40px_-12px_rgba(243,194,198,0.35)]" : "border-border hover:border-border-strong",
-      )}
+      className="group relative block overflow-hidden rounded-xl border border-border bg-surface transition-colors duration-300 hover:border-border-strong"
     >
       <div className="relative aspect-[3/4] overflow-hidden bg-surface-2">
         {img ? (
@@ -25,10 +18,7 @@ export function ProfileCard({ p, sponsored = false, priority = false }: { p: Pro
           <div className="flex h-full items-center justify-center font-display text-5xl text-gold/40">{p.stageName.slice(0, 1)}</div>
         )}
         <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-        <div className="absolute left-2.5 top-2.5 flex flex-wrap gap-1.5">
-          {sponsored ? <span className="rounded-full bg-black/70 px-2 py-0.5 text-[10px] uppercase tracking-wider text-muted ring-1 ring-white/10">Gesponsert</span> : null}
-          {premium ? <span className="inline-flex items-center gap-1 rounded-full bg-gold px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-background"><Crown className="size-3" /> Premium</span> : null}
-        </div>
+        {sponsored ? <span className="absolute left-2.5 top-2.5 rounded-full bg-black/70 px-2 py-0.5 text-[10px] uppercase tracking-wider text-muted ring-1 ring-white/10">Gesponsert</span> : null}
         <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
           <p className="flex items-center gap-1.5 font-display text-2xl text-white sm:text-3xl">
             {p.stageName}

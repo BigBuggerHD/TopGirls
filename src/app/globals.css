@@ -74,3 +74,13 @@
   & li { margin: 0.25rem 0; }
   & a { color: var(--color-gold); text-decoration: underline; text-underline-offset: 3px; }
 }
+
+/* Laufbanner (Startseite) */
+@keyframes tg-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@utility animate-marquee {
+  animation: tg-marquee 60s linear infinite;
+  @media (prefers-reduced-motion: reduce) { animation: none; }
+}

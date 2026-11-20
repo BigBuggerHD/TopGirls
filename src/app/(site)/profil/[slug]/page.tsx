@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BadgeCheck, Clock, Crown, Globe, Languages, Mail, MapPin } from "lucide-react";
+import { BadgeCheck, Clock, Globe, Languages, Mail, MapPin } from "lucide-react";
 import { db } from "@/lib/db";
 import { publicProfileWhere } from "@/lib/queries/profiles";
 import { trackProfiles } from "@/lib/stats";
@@ -45,8 +45,6 @@ export default async function ProfilePage({ params }: Params) {
   const user = await getCurrentUser();
   await trackProfiles([p.id], "views");
 
-  const now = Date.now();
-  const premium = p.premiumUntil && p.premiumUntil.getTime() > now;
   const availability = (p.availability ?? {}) as Record<string, { active?: boolean; from?: string; to?: string }>;
   const hasAvailability = WEEKDAYS.some(([k]) => availability[k]?.active);
   const isBusinessOwner = ["AGENCY", "CLUB", "MASSAGE_STUDIO"].includes(p.owner.role);
@@ -61,7 +59,6 @@ export default async function ProfilePage({ params }: Params) {
 
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            {premium ? <Badge variant="gold"><Crown className="size-3" /> Premium</Badge> : null}
             {p.verified ? <Badge variant="success"><BadgeCheck className="size-3" /> Verifiziert</Badge> : null}
             <Badge>{p.category.name}</Badge>
           </div>
