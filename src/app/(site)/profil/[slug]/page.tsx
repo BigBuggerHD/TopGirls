@@ -48,20 +48,23 @@ export default async function ProfilePage({ params }: Params) {
 
   const meeting = meetingTypes(p);
 
-  // Eigenschaften-Tabelle: Alter + alle aktiven Eigenschaften außer Treffpunkt (Incall/Outcall-Symbole) und Leistungen (eigene Zeile)
+  // Eigenschaften-Tabelle: Alter + ALLE aktiven Eigenschaften der Kategorie (ohne Angabe: „–“),
+  // außer Treffpunkt (Incall/Outcall-Symbole) und Leistungen (eigene Zeile darunter)
   const HIDDEN_IN_TABLE = [MEETING_FILTER_KEY, "leistungen"];
+  const categoryFilters = await db.filterDefinition.findMany({
+    where: { active: true, key: { notIn: HIDDEN_IN_TABLE }, categories: { some: { categoryId: p.categoryId } } },
+    orderBy: { sortOrder: "asc" },
+  });
   const traits: { label: string; value: string }[] = [
-    ...(p.age ? [{ label: "Alter", value: `${p.age} Jahre` }] : []),
-    ...p.attributes
-      .filter((a) => a.filter.active && !HIDDEN_IN_TABLE.includes(a.filter.key))
-      .map((a) => ({
-        label: a.filter.label,
-        value:
-          a.filter.type === "BOOLEAN" ? (a.boolValue == null ? "" : a.boolValue ? "Ja" : "Nein")
-          : a.filter.type === "NUMBER" ? (a.numberValue != null ? `${a.numberValue}${a.filter.unit ? ` ${a.filter.unit}` : ""}` : "")
-          : a.options.map((o) => o.option.label).join(", "),
-      }))
-      .filter((t) => t.value),
+    { label: "Alter", value: p.age ? `${p.age} Jahre` : "–" },
+    ...categoryFilters.map((f) => {
+      const a = p.attributes.find((x) => x.filterId === f.id);
+      const value = !a ? ""
+        : f.type === "BOOLEAN" ? (a.boolValue == null ? "" : a.boolValue ? "Ja" : "Nein")
+        : f.type === "NUMBER" ? (a.numberValue != null ? `${a.numberValue}${f.unit ? ` ${f.unit}` : ""}` : "")
+        : a.options.map((o) => o.option.label).join(", ");
+      return { label: f.label, value: value || "–" };
+    }),
   ];
   const services = p.attributes.find((a) => a.filter.key === "leistungen" && a.filter.active)?.options.map((o) => o.option.label) ?? [];
   const availability = (p.availability ?? {}) as Record<string, { active?: boolean; from?: string; to?: string }>;
@@ -126,7 +129,7 @@ export default async function ProfilePage({ params }: Params) {
                     {traits.map((t) => (
                       <div key={t.label} className="flex justify-between gap-3 border-b border-border pb-2 text-sm">
                         <dt className="text-subtle">{t.label}</dt>
-                        <dd className="text-right text-foreground">{t.value}</dd>
+                        <dd className={`text-right ${t.value === "–" ? "text-subtle" : "text-foreground"}`}>{t.value}</dd>
                       </div>
                     ))}
                   </dl>
