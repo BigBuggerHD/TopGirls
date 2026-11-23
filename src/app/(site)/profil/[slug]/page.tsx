@@ -57,7 +57,26 @@ export default async function ProfilePage({ params }: Params) {
         <Link href="/" className="hover:text-gold">Startseite</Link> / <Link href={`/${p.category.slug}`} className="hover:text-gold">{p.category.name}</Link> / <span className="text-muted">{p.stageName}</span>
       </nav>
       <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-        <Gallery name={p.stageName} images={p.images.map((i) => ({ id: i.id, src: mediaUrl(i.storageKey)!, thumb: mediaUrl(i.thumbKey)! }))} />
+        {/* Links: Bilder, darunter die Verfügbarkeit */}
+        <div className="space-y-8">
+          <Gallery name={p.stageName} images={p.images.map((i) => ({ id: i.id, src: mediaUrl(i.storageKey)!, thumb: mediaUrl(i.thumbKey)! }))} />
+          {hasAvailability || p.availabilityNote ? (
+            <section>
+              <h2 className="mb-3 flex items-center gap-2 font-display text-2xl text-white"><Clock className="size-5 text-gold" /> Verfügbarkeit</h2>
+              {hasAvailability ? (
+                <ul className="grid gap-1.5 text-sm sm:grid-cols-2">
+                  {WEEKDAYS.map(([k, label]) => (
+                    <li key={k} className="flex justify-between gap-3 rounded-md bg-surface px-3 py-2">
+                      <span className="text-muted">{label}</span>
+                      <span className={`whitespace-nowrap ${availability[k]?.active ? "text-foreground" : "text-subtle"}`}>{availability[k]?.active ? `${availability[k]?.from ?? ""} – ${availability[k]?.to ?? ""} Uhr` : "–"}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {p.availabilityNote ? <p className="mt-3 text-sm text-muted">{p.availabilityNote}</p> : null}
+            </section>
+          ) : null}
+        </div>
 
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -101,23 +120,6 @@ export default async function ProfilePage({ params }: Params) {
                       );
                     })}
                   </dl>
-                </section>
-              ) : null}
-
-              {hasAvailability || p.availabilityNote ? (
-                <section>
-                  <h2 className="mb-3 flex items-center gap-2 font-display text-2xl text-white"><Clock className="size-5 text-gold" /> Verfügbarkeit</h2>
-                  {hasAvailability ? (
-                    <ul className="grid gap-1.5 text-sm sm:grid-cols-2">
-                      {WEEKDAYS.map(([k, label]) => (
-                        <li key={k} className="flex justify-between gap-3 rounded-md bg-surface px-3 py-2">
-                          <span className="text-muted">{label}</span>
-                          <span className={`whitespace-nowrap ${availability[k]?.active ? "text-foreground" : "text-subtle"}`}>{availability[k]?.active ? `${availability[k]?.from ?? ""} – ${availability[k]?.to ?? ""} Uhr` : "–"}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                  {p.availabilityNote ? <p className="mt-3 text-sm text-muted">{p.availabilityNote}</p> : null}
                 </section>
               ) : null}
             </div>

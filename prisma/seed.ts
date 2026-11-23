@@ -172,10 +172,14 @@ async function main() {
   }
 
   // „Leistungen“ wird per Migration angelegt (siehe prisma/migrations/*_sedcard_preise_leistungen) – hier mit „Frauen“ verknüpfen
-  const services = await db.filterDefinition.findUnique({ where: { key: "leistungen" }, include: { options: true } });
-  if (services) {
-    await db.filterCategory.createMany({ data: [{ filterId: services.id, categoryId: cats["frauen"] }], skipDuplicates: true });
-    filters["leistungen"] = { id: services.id, type: services.type, options: services.options.map((o) => ({ id: o.id, value: o.value })) };
+  // Weitere Eigenschaften werden per Migration angelegt (*_sedcard_14_eigenschaften) – ebenfalls mit „Frauen“ verknüpfen
+  const migrated = await db.filterDefinition.findMany({
+    where: { key: { in: ["leistungen", "haarlaenge", "konfektionsgroesse", "koerbchengroesse", "gewicht", "schuhgroesse", "tattoos", "piercings"] } },
+    include: { options: true },
+  });
+  for (const f of migrated) {
+    await db.filterCategory.createMany({ data: [{ filterId: f.id, categoryId: cats["frauen"] }], skipDuplicates: true });
+    filters[f.key] = { id: f.id, type: f.type, options: f.options.map((o) => ({ id: o.id, value: o.value })) };
   }
 
   // ── Profile ──
@@ -217,7 +221,17 @@ async function main() {
     const isWoman = p.cat === "frauen";
     if (isWoman) {
       const svc = [["dinner-date", "begleitung-events", "uebernachtung"], ["reisebegleitung", "dinner-date", "wellness"], ["massage", "girlfriend-experience", "dinner-date"], ["begleitung-events", "massage"]][i % 4];
-      p.attrs = { ...(p.attrs ?? {}), leistungen: svc };
+      p.attrs = {
+        ...(p.attrs ?? {}),
+        leistungen: svc,
+        haarlaenge: [["lang", "schulterlang", "sehr-lang", "kurz"][i % 4]],
+        konfektionsgroesse: [["34", "36", "38", "36"][i % 4]],
+        koerbchengroesse: [["b", "c", "d", "c"][i % 4]],
+        gewicht: 52 + (i % 5) * 3,
+        schuhgroesse: 37 + (i % 4),
+        tattoos: i % 3 === 0,
+        piercings: i % 2 === 0,
+      };
     }
     const prices = isWoman
       ? [{ label: "1 Stunde", amountCents: 25000 + (i % 3) * 5000 }, { label: "2 Stunden", amountCents: 45000 + (i % 3) * 8000 }, { label: "Dinner-Date (4 Stunden)", amountCents: 80000 }, { label: "Übernachtung", amountCents: 150000 }]
