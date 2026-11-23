@@ -235,7 +235,12 @@ async function main() {
       };
     }
     const prices = isWoman
-      ? [{ label: "1 Stunde", amountCents: 25000 + (i % 3) * 5000 }, { label: "2 Stunden", amountCents: 45000 + (i % 3) * 8000 }, { label: "Dinner-Date (4 Stunden)", amountCents: 80000 }, { label: "Übernachtung", amountCents: 150000 }]
+      ? [
+          { label: "1 Stunde", incallCents: 25000 + (i % 3) * 5000, outcallCents: 30000 + (i % 3) * 5000 },
+          { label: "2 Stunden", incallCents: 45000 + (i % 3) * 8000, outcallCents: 52000 + (i % 3) * 8000 },
+          { label: "3 Stunden", incallCents: 65000, outcallCents: 75000 },
+          { label: "Übernachtung", incallCents: 150000, outcallCents: 170000 },
+        ]
       : null;
     const created = await db.profile.create({
       data: {

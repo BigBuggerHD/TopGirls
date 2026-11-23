@@ -9,6 +9,7 @@ import { Field, FormMessage, SubmitButton } from "@/components/ui/form";
 import { Checkbox, Input, Select, Textarea } from "@/components/ui/input";
 import { WEEKDAYS } from "@/lib/labels";
 import type { ActionState } from "@/lib/validation";
+import { centsToInput, type PriceRow } from "@/lib/prices";
 
 type Action = (s: ActionState, fd: FormData) => Promise<ActionState>;
 
@@ -200,7 +201,7 @@ export function LocationStep({ profile }: { profile: { id: string; city: string;
 }
 
 type Avail = Record<string, { active?: boolean; from?: string; to?: string }>;
-export function ContactStep({ profile }: { profile: { id: string; contactPhone: string | null; contactWhatsapp: string | null; contactEmail: string | null; contactWebsite: string | null; showPhone: boolean; allowMessages: boolean; availabilityNote: string | null; availability: Avail; prices: { label: string; amountCents: number }[]; priceNote: string | null } }) {
+export function ContactStep({ profile }: { profile: { id: string; contactPhone: string | null; contactWhatsapp: string | null; contactEmail: string | null; contactWebsite: string | null; showPhone: boolean; allowMessages: boolean; availabilityNote: string | null; availability: Avail; prices: PriceRow[]; priceNote: string | null } }) {
   return (
     <StepForm action={saveContactAction} profileId={profile.id}>
       {(s) => (
@@ -234,16 +235,21 @@ export function ContactStep({ profile }: { profile: { id: string; contactPhone: 
           </Field>
           <fieldset className="space-y-2">
             <legend className="mb-1 text-sm font-medium">Preise</legend>
-            <p className="text-xs text-subtle">Bis zu 8 Positionen, z. B. „1 Stunde“ – „250“. Leere Zeilen werden ignoriert.</p>
+            <p className="text-xs text-subtle">Bis zu 8 Positionen, z. B. „1 Stunde“. Trage den Preis für Incall (bei dir) und/oder Outcall (Haus-/Hotelbesuch) ein. Angezeigt wird nur, was du unter „Treffpunkt“ (Schritt 4) gewählt hast.</p>
+            <div className="hidden grid-cols-[1fr_130px_130px] gap-3 text-xs text-subtle sm:grid"><span>Bezeichnung</span><span>Incall</span><span>Outcall</span></div>
             {Array.from({ length: 8 }, (_, i) => {
               const r = profile.prices[i];
+              const euro = (name: string, value: number | null | undefined, label: string) => (
+                <div className="relative">
+                  <Input name={name} defaultValue={centsToInput(value)} inputMode="decimal" placeholder={label} aria-label={`Preis ${i + 1} – ${label} in Euro`} className="pr-8" />
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-subtle">€</span>
+                </div>
+              );
               return (
-                <div key={i} className="grid grid-cols-[1fr_140px] gap-3">
-                  <Input name={`price_label_${i}`} defaultValue={r?.label ?? ""} placeholder={i === 0 ? "z. B. 1 Stunde" : ""} maxLength={60} aria-label={`Preis ${i + 1} – Bezeichnung`} />
-                  <div className="relative">
-                    <Input name={`price_amount_${i}`} defaultValue={r ? (r.amountCents / 100).toFixed(2).replace(".", ",").replace(",00", "") : ""} inputMode="decimal" placeholder="0" aria-label={`Preis ${i + 1} – Betrag in Euro`} className="pr-8" />
-                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-subtle">€</span>
-                  </div>
+                <div key={i} className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_130px_130px]">
+                  <Input name={`price_label_${i}`} defaultValue={r?.label ?? ""} placeholder={i === 0 ? "z. B. 1 Stunde" : ""} maxLength={60} aria-label={`Preis ${i + 1} – Bezeichnung`} className="col-span-2 sm:col-span-1" />
+                  {euro(`price_in_${i}`, r?.incallCents, "Incall")}
+                  {euro(`price_out_${i}`, r?.outcallCents, "Outcall")}
                 </div>
               );
             })}

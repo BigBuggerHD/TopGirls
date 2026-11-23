@@ -138,13 +138,18 @@ export async function saveContactAction(_: ActionState, fd: FormData): Promise<A
   return done(p.id, 6, fd);
 }
 
-/** Liest die Preiszeilen aus dem Formular (price_label_N / price_amount_N). Unvollständige Zeilen werden ignoriert. */
+/** Liest die Preiszeilen (price_label_N, price_in_N, price_out_N). Zeilen ohne Bezeichnung oder ohne Preis werden ignoriert. */
 function readPrices(fd: FormData): PriceRow[] {
   const rows: PriceRow[] = [];
+  const amount = (name: string) => {
+    const c = parseEuroToCents(String(fd.get(name) ?? "").trim());
+    return c != null && c >= 0 && c <= 10_000_000 ? c : null;
+  };
   for (let i = 0; i < MAX_PRICE_ROWS; i++) {
     const label = String(fd.get(`price_label_${i}`) ?? "").trim().slice(0, 60);
-    const amount = parseEuroToCents(String(fd.get(`price_amount_${i}`) ?? "").trim());
-    if (label && amount != null && amount >= 0 && amount <= 10_000_000) rows.push({ label, amountCents: amount });
+    const incallCents = amount(`price_in_${i}`);
+    const outcallCents = amount(`price_out_${i}`);
+    if (label && (incallCents != null || outcallCents != null)) rows.push({ label, incallCents, outcallCents });
   }
   return rows;
 }

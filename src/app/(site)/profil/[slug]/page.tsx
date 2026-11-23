@@ -9,7 +9,8 @@ import { trackProfiles } from "@/lib/stats";
 import { getCurrentUser } from "@/lib/auth/session";
 import { mediaUrl } from "@/lib/media";
 import { WEEKDAYS } from "@/lib/labels";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatEuro } from "@/lib/format";
+import { parsePrices } from "@/lib/prices";
 import { Gallery } from "@/components/profiles/gallery";
 import { ContactReveal } from "@/components/profiles/contact-reveal";
 import { ReportDialog } from "@/components/report/report-dialog";
@@ -66,6 +67,11 @@ export default async function ProfilePage({ params }: Params) {
       return { label: f.label, value: value || "–" };
     }),
   ];
+  // Preisliste: Spalte nur befüllen, wenn Incall bzw. Outcall beim Treffpunkt gewählt ist (ohne Auswahl: beide)
+  const prices = parsePrices(p.prices);
+  const noMeetingChoice = !meeting.incall && !meeting.outcall;
+  const showIncall = meeting.incall || noMeetingChoice;
+  const showOutcall = meeting.outcall || noMeetingChoice;
   const services = p.attributes.find((a) => a.filter.key === "leistungen" && a.filter.active)?.options.map((o) => o.option.label) ?? [];
   const availability = (p.availability ?? {}) as Record<string, { active?: boolean; from?: string; to?: string }>;
   const hasAvailability = WEEKDAYS.some(([k]) => availability[k]?.active);
@@ -133,6 +139,32 @@ export default async function ProfilePage({ params }: Params) {
                       </div>
                     ))}
                   </dl>
+                  <div className="mt-8">
+                    <h3 className="mb-3 font-display text-2xl text-white">Preise</h3>
+                    {prices.length ? (
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border text-left text-subtle">
+                            <th className="pb-2 font-normal">Dauer</th>
+                            <th className="pb-2 text-right font-normal"><span className="inline-flex items-center gap-1.5"><House className="size-3.5 text-gold" /> Incall</span></th>
+                            <th className="pb-2 text-right font-normal"><span className="inline-flex items-center gap-1.5"><Car className="size-3.5 text-gold" /> Outcall</span></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {prices.map((r, i) => (
+                            <tr key={i} className="border-b border-border">
+                              <td className="py-2 text-foreground/90">{r.label}</td>
+                              <td className={`py-2 text-right ${showIncall && r.incallCents != null ? "text-foreground" : "text-subtle"}`}>{showIncall && r.incallCents != null ? formatEuro(r.incallCents) : "–"}</td>
+                              <td className={`py-2 text-right ${showOutcall && r.outcallCents != null ? "text-foreground" : "text-subtle"}`}>{showOutcall && r.outcallCents != null ? formatEuro(r.outcallCents) : "–"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <p className="text-sm text-subtle">Preise auf Anfrage.</p>
+                    )}
+                    {p.priceNote ? <p className="mt-2 text-xs text-muted">{p.priceNote}</p> : null}
+                  </div>
                   {services.length ? (
                     <div className="mt-6">
                       <h3 className="mb-2 text-sm text-subtle">Leistungen</h3>
