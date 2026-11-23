@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BadgeCheck, Car, Clock, Globe, House, Languages, Mail, MapPin } from "lucide-react";
-import { meetingTypes } from "@/lib/meeting";
+import { MEETING_FILTER_KEY, meetingTypes } from "@/lib/meeting";
 import { db } from "@/lib/db";
 import { publicProfileWhere } from "@/lib/queries/profiles";
 import { trackProfiles } from "@/lib/stats";
@@ -47,6 +47,23 @@ export default async function ProfilePage({ params }: Params) {
   await trackProfiles([p.id], "views");
 
   const meeting = meetingTypes(p);
+
+  // Eigenschaften-Tabelle: Alter + alle aktiven Eigenschaften außer Treffpunkt (Incall/Outcall-Symbole) und Leistungen (eigene Zeile)
+  const HIDDEN_IN_TABLE = [MEETING_FILTER_KEY, "leistungen"];
+  const traits: { label: string; value: string }[] = [
+    ...(p.age ? [{ label: "Alter", value: `${p.age} Jahre` }] : []),
+    ...p.attributes
+      .filter((a) => a.filter.active && !HIDDEN_IN_TABLE.includes(a.filter.key))
+      .map((a) => ({
+        label: a.filter.label,
+        value:
+          a.filter.type === "BOOLEAN" ? (a.boolValue == null ? "" : a.boolValue ? "Ja" : "Nein")
+          : a.filter.type === "NUMBER" ? (a.numberValue != null ? `${a.numberValue}${a.filter.unit ? ` ${a.filter.unit}` : ""}` : "")
+          : a.options.map((o) => o.option.label).join(", "),
+      }))
+      .filter((t) => t.value),
+  ];
+  const services = p.attributes.find((a) => a.filter.key === "leistungen" && a.filter.active)?.options.map((o) => o.option.label) ?? [];
   const availability = (p.availability ?? {}) as Record<string, { active?: boolean; from?: string; to?: string }>;
   const hasAvailability = WEEKDAYS.some(([k]) => availability[k]?.active);
   const isBusinessOwner = ["AGENCY", "CLUB", "MASSAGE_STUDIO"].includes(p.owner.role);
@@ -102,24 +119,25 @@ export default async function ProfilePage({ params }: Params) {
                 <div className="whitespace-pre-line text-sm leading-relaxed text-foreground/85">{p.description}</div>
               </section>
 
-              {p.attributes.length ? (
+              {traits.length || services.length ? (
                 <section>
                   <h2 className="mb-3 font-display text-2xl text-white">Eigenschaften</h2>
                   <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-                    {p.attributes.filter((a) => a.filter.active).map((a) => {
-                      const value =
-                        a.filter.type === "BOOLEAN" ? (a.boolValue ? "Ja" : "Nein")
-                        : a.filter.type === "NUMBER" ? (a.numberValue != null ? `${a.numberValue}${a.filter.unit ? ` ${a.filter.unit}` : ""}` : null)
-                        : a.options.map((o) => o.option.label).join(", ");
-                      if (!value) return null;
-                      return (
-                        <div key={a.id} className="flex justify-between gap-3 border-b border-border pb-2 text-sm">
-                          <dt className="text-subtle">{a.filter.label}</dt>
-                          <dd className="text-right text-foreground">{value}</dd>
-                        </div>
-                      );
-                    })}
+                    {traits.map((t) => (
+                      <div key={t.label} className="flex justify-between gap-3 border-b border-border pb-2 text-sm">
+                        <dt className="text-subtle">{t.label}</dt>
+                        <dd className="text-right text-foreground">{t.value}</dd>
+                      </div>
+                    ))}
                   </dl>
+                  {services.length ? (
+                    <div className="mt-6">
+                      <h3 className="mb-2 text-sm text-subtle">Leistungen</h3>
+                      <ul className="flex flex-wrap gap-2">
+                        {services.map((s) => <li key={s} className="rounded-full border border-gold/40 bg-gold/5 px-3 py-1 text-sm text-foreground">{s}</li>)}
+                      </ul>
+                    </div>
+                  ) : null}
                 </section>
               ) : null}
             </div>

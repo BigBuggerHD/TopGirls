@@ -174,7 +174,7 @@ async function main() {
   // „Leistungen“ wird per Migration angelegt (siehe prisma/migrations/*_sedcard_preise_leistungen) – hier mit „Frauen“ verknüpfen
   // Weitere Eigenschaften werden per Migration angelegt (*_sedcard_14_eigenschaften) – ebenfalls mit „Frauen“ verknüpfen
   const migrated = await db.filterDefinition.findMany({
-    where: { key: { in: ["leistungen", "haarlaenge", "konfektionsgroesse", "koerbchengroesse", "gewicht", "schuhgroesse", "tattoos", "piercings"] } },
+    where: { key: { in: ["leistungen", "konfektionsgroesse", "koerbchengroesse", "schuhgroesse", "tattoos", "piercings", "typ", "intimbereich", "orientierung"] } },
     include: { options: true },
   });
   for (const f of migrated) {
@@ -224,11 +224,12 @@ async function main() {
       p.attrs = {
         ...(p.attrs ?? {}),
         leistungen: svc,
-        haarlaenge: [["lang", "schulterlang", "sehr-lang", "kurz"][i % 4]],
         konfektionsgroesse: [["34", "36", "38", "36"][i % 4]],
         koerbchengroesse: [["b", "c", "d", "c"][i % 4]],
-        gewicht: 52 + (i % 5) * 3,
         schuhgroesse: 37 + (i % 4),
+        typ: [["europaeisch", "suedlaendisch", "osteuropaeisch", "lateinamerikanisch"][i % 4]],
+        intimbereich: [["rasiert", "teilrasiert", "natuerlich"][i % 3]],
+        orientierung: [["hetero", "bi"][i % 2]],
         tattoos: i % 3 === 0,
         piercings: i % 2 === 0,
       };
