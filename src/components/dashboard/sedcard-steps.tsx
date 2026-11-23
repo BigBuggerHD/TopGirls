@@ -230,9 +230,6 @@ export function ContactStep({ profile }: { profile: { id: string; contactPhone: 
               );
             })}
           </fieldset>
-          <Field label="Hinweis zur Verfügbarkeit" name="availabilityNote" errors={s?.errors?.availabilityNote}>
-            <Input id="availabilityNote" name="availabilityNote" defaultValue={profile.availabilityNote ?? ""} maxLength={300} />
-          </Field>
           <fieldset className="space-y-2">
             <legend className="mb-1 text-sm font-medium">Preise</legend>
             <p className="text-xs text-subtle">Bis zu 8 Positionen, z. B. „1 Stunde“. Trage den Preis für Incall (bei dir) und/oder Outcall (Haus-/Hotelbesuch) ein. Angezeigt wird nur, was du unter „Treffpunkt“ (Schritt 4) gewählt hast.</p>

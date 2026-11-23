@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BadgeCheck, Car, Clock, Globe, House, Languages, Mail, MapPin } from "lucide-react";
+import { BadgeCheck, Car, Check, ChevronDown, Clock, Globe, House, Languages, Mail, MapPin, Sparkles } from "lucide-react";
 import { MEETING_FILTER_KEY, meetingTypes } from "@/lib/meeting";
 import { db } from "@/lib/db";
 import { publicProfileWhere } from "@/lib/queries/profiles";
@@ -112,7 +112,7 @@ export default async function ProfilePage({ params }: Params) {
                 <div className="whitespace-pre-line text-sm leading-relaxed text-foreground/85">{p.description}</div>
               </section>
 
-              {traits.length || services.length ? (
+              {traits.length ? (
                 <section>
                   <h2 className="mb-3 font-display text-2xl text-white">Eigenschaften</h2>
                   <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
@@ -123,14 +123,6 @@ export default async function ProfilePage({ params }: Params) {
                       </div>
                     ))}
                   </dl>
-                  {services.length ? (
-                    <div className="mt-6">
-                      <h3 className="mb-2 text-sm text-subtle">Leistungen</h3>
-                      <ul className="flex flex-wrap gap-2">
-                        {services.map((s) => <li key={s} className="rounded-full border border-gold/40 bg-gold/5 px-3 py-1 text-sm text-foreground">{s}</li>)}
-                      </ul>
-                    </div>
-                  ) : null}
                 </section>
               ) : null}
             </div>
@@ -164,7 +156,7 @@ export default async function ProfilePage({ params }: Params) {
         </div>
         {/* Zeile 2 links: Verfügbarkeit (unter den Bildern) */}
         <div>
-          {hasAvailability || p.availabilityNote ? (
+          {hasAvailability ? (
             <section>
               <h2 className="mb-3 flex items-center gap-2 font-display text-2xl text-white"><Clock className="size-5 text-gold" /> Verfügbarkeit</h2>
               {hasAvailability ? (
@@ -177,7 +169,6 @@ export default async function ProfilePage({ params }: Params) {
                   ))}
                 </ul>
               ) : null}
-              {p.availabilityNote ? <p className="mt-3 text-sm text-muted">{p.availabilityNote}</p> : null}
             </section>
           ) : null}
         </div>
@@ -210,6 +201,30 @@ export default async function ProfilePage({ params }: Params) {
           {p.priceNote ? <p className="mt-2 text-xs text-muted">{p.priceNote}</p> : null}
         </section>
         </div>
+
+        {/* Zeile 3: Leistungen als aufklappbares Menü – von der Verfügbarkeit bis zum Ende der Preistabelle */}
+        <details className="group rounded-xl border border-border bg-surface lg:col-span-2 xl:mr-[calc(280px+2rem)]">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 [&::-webkit-details-marker]:hidden">
+            <span className="flex items-center gap-2 font-display text-2xl text-white">
+              <Sparkles className="size-5 text-gold" /> Leistungen
+              <span className="font-sans text-sm text-subtle">({services.length})</span>
+            </span>
+            <ChevronDown className="size-5 text-gold transition-transform duration-200 group-open:rotate-180" />
+          </summary>
+          <div className="border-t border-border px-5 py-5">
+            {services.length ? (
+              <ul className="grid gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
+                {services.map((s) => (
+                  <li key={s} className="flex items-center gap-2 border-b border-border py-2 text-sm text-foreground">
+                    <Check className="size-4 shrink-0 text-gold" /> {s}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-subtle">Keine Leistungen angegeben.</p>
+            )}
+          </div>
+        </details>
       </div>
     </div>
   );
