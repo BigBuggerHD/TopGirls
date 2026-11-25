@@ -121,16 +121,16 @@ async function main() {
 
   const admin = await mkUser("admin@topgirls.local", "ADMIN", "Admin Top Girls", { verificationStatus: "APPROVED" });
   const moderator = await mkUser("moderator@topgirls.local", "MODERATOR", "Moderation", { verificationStatus: "APPROVED" });
-  const agency = await mkUser("agentur@topgirls.local", "AGENCY", "Vanessa Demo", { companyName: "Velvet Demo Agentur GmbH", verificationStatus: "APPROVED", tokenBalance: 0 });
-  const provider = await mkUser("anbieterin@topgirls.local", "PROVIDER", "Lara Demo", { verificationStatus: "APPROVED" });
-  const club = await mkUser("club@topgirls.local", "CLUB", "Club-Leitung Demo", { companyName: "Club Aurum (fiktiv)", verificationStatus: "APPROVED" });
-  const studio = await mkUser("massage@topgirls.local", "MASSAGE_STUDIO", "Studio-Leitung Demo", { companyName: "Lotus Massagestudio (fiktiv)", verificationStatus: "APPROVED" });
-  const apartment = await mkUser("apartment@topgirls.local", "APARTMENT", "Apartment-Service Demo", { companyName: "Citylofts Vermietung (fiktiv)", verificationStatus: "APPROVED" });
-  const visitor = await mkUser("besucher@topgirls.local", "VISITOR", "Max Besucher");
-  const newProvider = await mkUser("neu@topgirls.local", "PROVIDER", "Nina Neu", { verificationStatus: "PENDING" });
+  const agency = await mkUser("agentur@topgirls.local", "MEMBER", "Vanessa Demo", { companyName: "Velvet Demo Agentur GmbH", verificationStatus: "APPROVED", tokenBalance: 0 });
+  const provider = await mkUser("anbieterin@topgirls.local", "MEMBER", "Lara Demo", { verificationStatus: "APPROVED" });
+  const club = await mkUser("club@topgirls.local", "MEMBER", "Club-Leitung Demo", { companyName: "Club Aurum (fiktiv)", verificationStatus: "APPROVED" });
+  const studio = await mkUser("massage@topgirls.local", "MEMBER", "Studio-Leitung Demo", { companyName: "Lotus Massagestudio (fiktiv)", verificationStatus: "APPROVED" });
+  const apartment = await mkUser("apartment@topgirls.local", "MEMBER", "Apartment-Service Demo", { companyName: "Citylofts Vermietung (fiktiv)", verificationStatus: "APPROVED" });
+  const visitor = await mkUser("besucher@topgirls.local", "MEMBER", "Max Besucher");
+  const newProvider = await mkUser("neu@topgirls.local", "MEMBER", "Nina Neu", { verificationStatus: "PENDING" });
 
   const extraProviders = await Promise.all(
-    ["Sophie", "Mila", "Elena", "Jade"].map((n, i) => mkUser(`demo${i + 1}@topgirls.local`, "PROVIDER", `${n} Demo`, { verificationStatus: "APPROVED" })),
+    ["Sophie", "Mila", "Elena", "Jade"].map((n, i) => mkUser(`demo${i + 1}@topgirls.local`, "MEMBER", `${n} Demo`, { verificationStatus: "APPROVED" })),
   );
 
   // ── Kategorien ──

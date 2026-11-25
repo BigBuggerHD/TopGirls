@@ -13,6 +13,7 @@ import { processAndStoreImage, storePrivateDocument, UploadError } from "@/lib/s
 import { storage } from "@/lib/storage";
 import { rateLimit } from "@/lib/rate-limit";
 import { audit } from "@/lib/audit";
+import { PERSON_CATEGORIES, requiresModelConsent } from "@/lib/model-consent";
 import { WEEKDAYS } from "@/lib/labels";
 import { MAX_PRICE_ROWS, type PriceRow } from "@/lib/prices";
 import {
@@ -20,8 +21,6 @@ import {
   profileBasicsSchema, profileContactSchema, profileDescriptionSchema, profileLocationSchema, zodErrors, type ActionState,
 } from "@/lib/validation";
 
-const PERSON_CATEGORIES = ["frauen", "online-inserate"];
-const AGENCY_LIKE = ["AGENCY", "CLUB", "MASSAGE_STUDIO"];
 
 async function ownedProfile(id: string, user: SessionUser) {
   const p = await db.profile.findUnique({ where: { id }, include: { category: true } });
@@ -49,7 +48,7 @@ export async function createProfileAction() {
   const max = can(user.role, "profile.multiple") ? settings.maxProfilesPerBusiness : settings.maxProfilesPerProvider;
   if (count >= max) redirect("/dashboard/sedcards?limit=1");
   const defaultCat = await db.category.findFirst({
-    where: { active: true, slug: user.role === "CLUB" ? "clubs" : user.role === "MASSAGE_STUDIO" ? "massagen" : "frauen" },
+    where: { active: true, slug: "frauen" },
   }) ?? (await db.category.findFirstOrThrow({ where: { active: true }, orderBy: { sortOrder: "asc" } }));
   const p = await db.profile.create({
     data: { ownerId: user.id, categoryId: defaultCat.id, stageName: "Neue Sedcard", slug: `entwurf-${randomSuffix(8)}` },
@@ -270,7 +269,7 @@ export async function getPublishChecklist(profileId: string) {
     include: { category: true, owner: true, images: true, verifications: { where: { docType: "MODEL_CONSENT" }, orderBy: { createdAt: "desc" }, take: 1 } },
   });
   const settings = await getSettings();
-  const needsModelConsent = AGENCY_LIKE.includes(p.owner.role) && PERSON_CATEGORIES.includes(p.category.slug);
+  const needsModelConsent = await requiresModelConsent(p);
   const items = [
     { ok: p.stageName !== "Neue Sedcard" && p.stageName.length >= 2, label: "Profildaten ausgefüllt" },
     { ok: p.description.length >= 80, label: "Beschreibung (mind. 80 Zeichen)" },

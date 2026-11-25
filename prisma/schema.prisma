@@ -15,6 +15,8 @@ datasource db {
 // ─────────────────────────────────────────────────────────────
 
 enum Role {
+  MEMBER // Mitglied – einheitliche Kontoart für alle Nutzer (Anbieterinnen, Agenturen, Clubs, Studios …)
+  // Frühere, getrennte Kontoarten (nicht mehr vergeben, nur aus Kompatibilitätsgründen vorhanden):
   VISITOR // Besucher (registriertes Kundenkonto)
   PROVIDER // Einzelanbieterin / Profilinhaberin
   AGENCY // Agentur
@@ -43,7 +45,7 @@ model User {
   id                 String             @id @default(cuid())
   email              String             @unique
   passwordHash       String
-  role               Role               @default(VISITOR)
+  role               Role               @default(MEMBER)
   status             UserStatus         @default(ACTIVE)
   displayName        String
   companyName        String?

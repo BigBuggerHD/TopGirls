@@ -7,7 +7,7 @@ import type { Role } from "@prisma/client";
 export const PERMISSIONS = [
   "dashboard.access",
   "profile.own", // eigene Sedcard(s) verwalten
-  "profile.multiple", // mehrere Sedcards (Agentur, Club, Studio)
+  "profile.multiple", // mehrere Sedcards
   "promotion.book",
   "ads.book",
   "tokens.buy",
@@ -52,13 +52,18 @@ const MODERATION: Permission[] = [
   "moderation.reports", "moderation.messages", "moderation.verifications", "moderation.ads",
 ];
 
+/** Rechte eines Mitglieds: alle Funktionen für Inserenten, inkl. mehrerer Sedcards. */
+const MEMBER_PERMISSIONS: Permission[] = [...BUSINESS, "profile.multiple"];
+
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
-  VISITOR: ["dashboard.access", "messages.use"],
-  PROVIDER: BUSINESS,
-  AGENCY: [...BUSINESS, "profile.multiple"],
-  APARTMENT: ["dashboard.access", "ads.book", "tokens.buy", "marketplace.post", "messages.use", "forum.use", "verification.request", "stats.view"],
-  CLUB: [...BUSINESS, "profile.multiple"],
-  MASSAGE_STUDIO: [...BUSINESS, "profile.multiple"],
+  MEMBER: MEMBER_PERMISSIONS,
+  // Frühere Kontoarten (werden nicht mehr vergeben) erhalten die gleichen Rechte wie Mitglieder
+  VISITOR: MEMBER_PERMISSIONS,
+  PROVIDER: MEMBER_PERMISSIONS,
+  AGENCY: MEMBER_PERMISSIONS,
+  APARTMENT: MEMBER_PERMISSIONS,
+  CLUB: MEMBER_PERMISSIONS,
+  MASSAGE_STUDIO: MEMBER_PERMISSIONS,
   MODERATOR: ["dashboard.access", "messages.use", "forum.use", ...MODERATION],
   ADMIN: [...PERMISSIONS],
 };
@@ -69,20 +74,24 @@ export function can(role: Role | null | undefined, permission: Permission): bool
 }
 
 export const ROLE_LABELS: Record<Role, string> = {
-  VISITOR: "Besucher",
-  PROVIDER: "Einzelanbieterin",
-  AGENCY: "Agentur",
-  APARTMENT: "Apartmentanbieter",
-  CLUB: "Clubbetreiber",
-  MASSAGE_STUDIO: "Massagestudio",
+  MEMBER: "Mitglied",
+  VISITOR: "Besucher (alt)",
+  PROVIDER: "Einzelanbieterin (alt)",
+  AGENCY: "Agentur (alt)",
+  APARTMENT: "Apartmentanbieter (alt)",
+  CLUB: "Clubbetreiber (alt)",
+  MASSAGE_STUDIO: "Massagestudio (alt)",
   MODERATOR: "Moderator",
   ADMIN: "Administrator",
 };
 
-/** Rollen, die bei der Registrierung frei wählbar sind. */
-export const SELF_SERVICE_ROLES: Role[] = ["VISITOR", "PROVIDER", "AGENCY", "APARTMENT", "CLUB", "MASSAGE_STUDIO"];
+/** Rollen, die im Adminbereich vergeben werden können. */
+export const ASSIGNABLE_ROLES: Role[] = ["MEMBER", "MODERATOR", "ADMIN"];
 
-/** Rollen mit geschäftlicher Tätigkeit (benötigen Identitätsprüfung vor Veröffentlichung). */
-export const BUSINESS_ROLES: Role[] = ["PROVIDER", "AGENCY", "APARTMENT", "CLUB", "MASSAGE_STUDIO"];
+/** Einheitliche Kontoart bei der Registrierung. */
+export const SELF_SERVICE_ROLES: Role[] = ["MEMBER"];
+
+/** Alle Nicht-Team-Konten (benötigen Identitätsprüfung vor Veröffentlichung). */
+export const BUSINESS_ROLES: Role[] = ["MEMBER", "VISITOR", "PROVIDER", "AGENCY", "APARTMENT", "CLUB", "MASSAGE_STUDIO"];
 
 export const isStaff = (role: Role) => role === "ADMIN" || role === "MODERATOR";

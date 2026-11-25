@@ -1,8 +1,7 @@
-import type { Role } from "@prisma/client";
 import { Check } from "lucide-react";
 import { requirePermission } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { PERMISSIONS, ROLE_LABELS, ROLE_PERMISSIONS } from "@/lib/rbac";
+import { ASSIGNABLE_ROLES, PERMISSIONS, ROLE_LABELS, ROLE_PERMISSIONS } from "@/lib/rbac";
 import { PageHeader } from "@/components/ui/page-header";
 import { Alert } from "@/components/ui/alert";
 
@@ -18,7 +17,7 @@ const P_LABELS: Record<string, string> = {
 export default async function RolesPage() {
   await requirePermission("admin.roles", "/admin");
   const counts = await db.user.groupBy({ by: ["role"], _count: true, where: { status: { not: "DELETED" } } });
-  const roles = Object.keys(ROLE_LABELS) as Role[];
+  const roles = ASSIGNABLE_ROLES;
   return (
     <div>
       <PageHeader title="Rollen & Rechte" description="Übersicht der Berechtigungen je Rolle. Rollen weist du in der Benutzerverwaltung zu." />

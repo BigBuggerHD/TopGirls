@@ -75,7 +75,6 @@ export default async function ProfilePage({ params }: Params) {
   const services = p.attributes.find((a) => a.filter.key === "leistungen" && a.filter.active)?.options.map((o) => o.option.label) ?? [];
   const availability = (p.availability ?? {}) as Record<string, { active?: boolean; from?: string; to?: string }>;
   const hasAvailability = WEEKDAYS.some(([k]) => availability[k]?.active);
-  const isBusinessOwner = ["AGENCY", "CLUB", "MASSAGE_STUDIO"].includes(p.owner.role);
 
   return (
     <div className="container-page py-10">
@@ -101,7 +100,7 @@ export default async function ProfilePage({ params }: Params) {
             <span className="flex items-center gap-1.5"><MapPin className="size-4 text-gold" /> {p.postalCode ? `${p.postalCode} ` : ""}{p.city}{p.region ? `, ${p.region}` : ""}</span>
             {p.languages.length ? <span className="flex items-center gap-1.5"><Languages className="size-4 text-gold" /> {p.languages.join(", ")}</span> : null}
           </p>
-          {isBusinessOwner && p.owner.companyName ? <p className="mt-2 text-xs text-subtle">Inserent: {p.owner.companyName}</p> : null}
+          {p.owner.companyName ? <p className="mt-2 text-xs text-subtle">Inserent: {p.owner.companyName}</p> : null}
 
           <div className="gold-hairline my-8" />
 

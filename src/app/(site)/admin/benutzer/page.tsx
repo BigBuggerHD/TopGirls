@@ -3,7 +3,7 @@ import type { Role, UserStatus } from "@prisma/client";
 import { requirePermission } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { formatDate, formatNumber } from "@/lib/format";
-import { ROLE_LABELS } from "@/lib/rbac";
+import { ASSIGNABLE_ROLES, ROLE_LABELS } from "@/lib/rbac";
 import { USER_STATUS, VERIFICATION_STATUS } from "@/lib/labels";
 import { PageHeader } from "@/components/ui/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +28,7 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
       <PageHeader title="Benutzer & Sperrungen" description="Konten suchen, Rollen ändern, sperren und Token-Guthaben anpassen." />
       <form className="mb-4 grid gap-2 sm:grid-cols-[1fr_200px_200px_auto]">
         <Input name="q" defaultValue={q} placeholder="E-Mail, Name, Firma" aria-label="Suche" />
-        <Select name="rolle" defaultValue={sp.rolle ?? ""} aria-label="Rolle"><option value="">Alle Rollen</option>{Object.entries(ROLE_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</Select>
+        <Select name="rolle" defaultValue={sp.rolle ?? ""} aria-label="Rolle"><option value="">Alle Rollen</option>{ASSIGNABLE_ROLES.map((k) => <option key={k} value={k}>{ROLE_LABELS[k]}</option>)}</Select>
         <Select name="status" defaultValue={sp.status ?? ""} aria-label="Status"><option value="">Alle Status</option>{Object.entries(USER_STATUS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</Select>
         <Button type="submit">Filtern</Button>
       </form>

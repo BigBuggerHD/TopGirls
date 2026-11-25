@@ -3,7 +3,7 @@ import { ageFromBirthDate, parseEuroToCents, passwordSchema, registerSchema } fr
 import { formatDate, formatEuro } from "@/lib/format";
 import { safeRedirectPath, slugify } from "@/lib/utils";
 
-const base = { displayName: "Test", email: "a@b.de", password: "Sicher12345", passwordConfirm: "Sicher12345", role: "VISITOR", terms: "on", adult: "on" };
+const base = { displayName: "Test", email: "a@b.de", password: "Sicher12345", passwordConfirm: "Sicher12345", terms: "on", adult: "on" };
 
 describe("Validierung", () => {
   it("verlangt Volljährigkeit bei der Registrierung", () => {

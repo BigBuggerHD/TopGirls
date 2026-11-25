@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requirePermission } from "@/lib/auth/session";
 import { db } from "@/lib/db";
-import { can, ROLE_LABELS } from "@/lib/rbac";
+import { ASSIGNABLE_ROLES, can, ROLE_LABELS } from "@/lib/rbac";
 import { formatDate, formatDateTime, formatNumber } from "@/lib/format";
 import { PROFILE_STATUS, TX_TYPE, USER_STATUS, VERIFICATION_STATUS } from "@/lib/labels";
 import { adjustTokensAction, updateUserAction } from "@/actions/admin";
@@ -56,7 +56,7 @@ export default async function AdminUserDetail({ params, searchParams }: { params
           <CardHeader><CardTitle>Aktionen</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             {can(admin.role, "admin.roles") ? op("role", "Rolle ändern", "outline",
-              <select name="role" defaultValue={u.role} className={inputCls} aria-label="Rolle">{Object.entries(ROLE_LABELS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>) : null}
+              <select name="role" defaultValue={u.role} className={inputCls} aria-label="Rolle">{ASSIGNABLE_ROLES.map((k) => <option key={k} value={k}>{ROLE_LABELS[k]}</option>)}</select>) : null}
             {op("suspend", "Befristet sperren", "secondary", <><input name="days" type="number" defaultValue={7} min={1} max={365} className={`${inputCls} w-20`} aria-label="Tage" /><input name="reason" placeholder="Grund" className={inputCls} /></>)}
             {op("ban", "Dauerhaft sperren", "destructive", <input name="reason" placeholder="Grund" className={inputCls} />)}
             {u.status !== "ACTIVE" && u.status !== "DELETED" ? op("unban", "Sperre aufheben", "default") : null}

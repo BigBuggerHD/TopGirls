@@ -48,11 +48,11 @@ export async function registerAction(_: ActionState, formData: FormData): Promis
       passwordHash: await hashPassword(d.password),
       displayName: d.displayName,
       companyName: d.companyName || null,
-      role: d.role,
+      role: "MEMBER",
       termsAcceptedAt: new Date(),
     },
   });
-  await audit(user.id, "user.register", { type: "User", id: user.id }, { role: d.role });
+  await audit(user.id, "user.register", { type: "User", id: user.id }, { role: "MEMBER" });
   await sendVerificationEmail(user.id);
   await createSession(user.id);
   redirect("/dashboard?willkommen=1");

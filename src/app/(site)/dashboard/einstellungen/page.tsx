@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/auth/session";
-import { BUSINESS_ROLES, ROLE_LABELS } from "@/lib/rbac";
+import { ROLE_LABELS } from "@/lib/rbac";
 import { formatDate } from "@/lib/format";
 import { db } from "@/lib/db";
 import { PageHeader } from "@/components/ui/page-header";
@@ -22,7 +22,7 @@ export default async function SettingsPage() {
           <CardHeader><CardTitle>Kontodaten</CardTitle><CardDescription>E-Mail: {user.email} {user.emailVerifiedAt ? `(bestätigt am ${formatDate(user.emailVerifiedAt)})` : "(nicht bestätigt)"}</CardDescription></CardHeader>
           <CardContent className="space-y-4">
             {!user.emailVerifiedAt ? <ResendVerificationButton /> : null}
-            <AccountForm displayName={user.displayName} companyName={user.companyName} business={BUSINESS_ROLES.includes(user.role)} />
+            <AccountForm displayName={user.displayName} companyName={user.companyName} business={user.role !== "ADMIN" && user.role !== "MODERATOR"} />
           </CardContent>
         </Card>
         <Card>

@@ -9,6 +9,7 @@ import { db } from "@/lib/db";
 import { requirePermission } from "@/lib/auth/session";
 import type { Permission } from "@/lib/rbac";
 import { audit } from "@/lib/audit";
+import { requiresModelConsent } from "@/lib/model-consent";
 import { storage } from "@/lib/storage";
 import { getSettings, setSetting, DEFAULT_SETTINGS, type Settings } from "@/lib/settings";
 import { creditTokens, debitTokens, InsufficientTokensError } from "@/lib/tokens";
@@ -44,7 +45,7 @@ export async function reviewProfileAction(fd: FormData) {
 
   if (decision === "approve") {
     if (settings.requireVerificationForPublish && p.owner.verificationStatus !== "APPROVED") return back(fd, `/admin/sedcards/${id}`, "fehler=konto-nicht-verifiziert");
-    const needsConsent = ["AGENCY", "CLUB", "MASSAGE_STUDIO"].includes(p.owner.role) && ["frauen", "online-inserate"].includes(p.category.slug);
+    const needsConsent = await requiresModelConsent(p);
     if (needsConsent && p.verifications[0]?.status !== "APPROVED") return back(fd, `/admin/sedcards/${id}`, "fehler=nachweis-fehlt");
     if (!p.images.some((i) => i.status === "APPROVED")) return back(fd, `/admin/sedcards/${id}`, "fehler=kein-bild-freigegeben");
     const now = new Date();
@@ -292,7 +293,7 @@ export async function updateUserAction(fd: FormData) {
 
   if (op === "role") {
     await guard("admin.roles");
-    const role = z.enum(["VISITOR", "PROVIDER", "AGENCY", "APARTMENT", "CLUB", "MASSAGE_STUDIO", "MODERATOR", "ADMIN"]).parse(str(fd, "role")) as Role;
+    const role = z.enum(["MEMBER", "MODERATOR", "ADMIN"]).parse(str(fd, "role")) as Role;
     await db.user.update({ where: { id }, data: { role } });
     await db.session.deleteMany({ where: { userId: id } });
     await audit(admin.id, "user.role_change", { type: "User", id }, { from: target.role, to: role });

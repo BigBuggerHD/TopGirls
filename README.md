@@ -68,13 +68,15 @@ Passwort für alle Konten: **`TopGirls!2026`**
 |---|---|
 | admin@topgirls.local | Administrator |
 | moderator@topgirls.local | Moderator |
-| agentur@topgirls.local | Agentur (mehrere Sedcards, Guthaben, Werbebuchung) |
-| anbieterin@topgirls.local | Einzelanbieterin |
-| club@topgirls.local | Clubbetreiber |
-| massage@topgirls.local | Massagestudio |
-| apartment@topgirls.local | Apartmentanbieter |
-| besucher@topgirls.local | Besucher |
-| neu@topgirls.local | Anbieterin mit offener Identitätsprüfung |
+| agentur@topgirls.local | Mitglied (Beispiel Agentur: mehrere Sedcards, Guthaben, Werbebuchung) |
+| anbieterin@topgirls.local | Mitglied (Beispiel Einzelanbieterin) |
+| club@topgirls.local | Mitglied (Beispiel Club) |
+| massage@topgirls.local | Mitglied (Beispiel Massagestudio) |
+| apartment@topgirls.local | Mitglied (Beispiel Apartmentvermietung) |
+| besucher@topgirls.local | Mitglied (ohne Sedcard) |
+| neu@topgirls.local | Mitglied mit offener Identitätsprüfung |
+
+Es gibt nur eine Kontoart („Mitglied“) für alle Nutzer; Admin und Moderator sind interne Team-Rollen.
 
 Alle Demo-Daten sind frei erfunden; Profilbilder sind generierte abstrakte Grafiken (keine Fotos realer Personen).
 

@@ -19,7 +19,6 @@ export const registerSchema = z
     email: emailSchema,
     password: passwordSchema,
     passwordConfirm: z.string(),
-    role: z.enum(["VISITOR", "PROVIDER", "AGENCY", "APARTMENT", "CLUB", "MASSAGE_STUDIO"], { message: "Bitte wähle eine Kontoart." }),
     companyName: z.string().trim().max(120).optional(),
     birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Bitte gib dein Geburtsdatum an."),
     terms: z.literal("on", { message: "Bitte akzeptiere die AGB und die Datenschutzerklärung." }),
