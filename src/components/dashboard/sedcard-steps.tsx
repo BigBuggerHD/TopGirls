@@ -13,10 +13,10 @@ import { centsToInput, type PriceRow } from "@/lib/prices";
 
 type Action = (s: ActionState, fd: FormData) => Promise<ActionState>;
 
-function StepForm({ action, profileId, children, last = false, encType }: { action: Action; profileId: string; children: (s: ActionState) => React.ReactNode; last?: boolean; encType?: boolean }) {
+function StepForm({ action, profileId, children, last = false }: { action: Action; profileId: string; children: (s: ActionState) => React.ReactNode; last?: boolean }) {
   const [state, formAction] = useActionState(action, undefined);
   return (
-    <form action={formAction} className="space-y-5" noValidate {...(encType ? { encType: "multipart/form-data" } : {})}>
+    <form action={formAction} className="space-y-5" noValidate>
       <FormMessage state={state} />
       <input type="hidden" name="profileId" value={profileId} />
       {children(state)}
@@ -101,7 +101,7 @@ export function ImagesStep({ profileId, images, onDelete, onCover }: {
           ))}
         </div>
       ) : null}
-      <StepForm action={uploadImagesAction} profileId={profileId} encType>
+      <StepForm action={uploadImagesAction} profileId={profileId}>
         {() => (
           <>
             <Field label="Bilder hochladen" name="images" hint="JPEG, PNG oder WebP, max. 10 MB je Bild, mind. 300 × 300 Pixel. Metadaten (z. B. GPS) werden automatisch entfernt.">
@@ -263,7 +263,7 @@ export function ContactStep({ profile }: { profile: { id: string; contactPhone: 
 export function ModelConsentUpload({ profileId }: { profileId: string }) {
   const [state, action] = useActionState(uploadModelConsentAction, undefined);
   return (
-    <form action={action} className="space-y-3 rounded-lg border border-warning/30 bg-warning/5 p-4" encType="multipart/form-data">
+    <form action={action} className="space-y-3 rounded-lg border border-warning/30 bg-warning/5 p-4">
       <FormMessage state={state} />
       <input type="hidden" name="profileId" value={profileId} />
       <p className="text-sm text-warning">Für Profile, die über eine Agentur, einen Club oder ein Studio veröffentlicht werden, ist ein Altersnachweis und eine unterschriebene Einwilligung der dargestellten Person erforderlich.</p>

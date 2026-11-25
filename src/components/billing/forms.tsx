@@ -27,7 +27,7 @@ export function AdBookingForm({ placements, profiles, requestId, balance }: { pl
   const cost = (p?.tokenCostPerDay ?? 0) * (days || 0);
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   return (
-    <form action={action} className="space-y-5" encType="multipart/form-data">
+    <form action={action} className="space-y-5">
       <FormMessage state={state} />
       <input type="hidden" name="requestId" value={requestId} />
       <div className="grid gap-5 sm:grid-cols-2">

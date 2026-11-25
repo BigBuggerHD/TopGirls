@@ -45,7 +45,7 @@ export function VerificationForm() {
   const [state, action] = useActionState(requestVerificationAction, undefined);
   if (state?.ok) return <FormMessage state={state} />;
   return (
-    <form action={action} className="space-y-5" encType="multipart/form-data">
+    <form action={action} className="space-y-5">
       <FormMessage state={state} />
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label="Dokumentart" name="docType" errors={state?.errors?.docType}>
