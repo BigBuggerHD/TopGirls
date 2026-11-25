@@ -12,7 +12,7 @@ export default function Page() {
       <h2>3. Welche Daten wir verarbeiten</h2>
       <ul>
         <li><strong>Altersabfrage:</strong> Ein technisch notwendiges, signiertes Cookie speichert deine Antwort für die konfigurierte Dauer (§ 25 Abs. 2 Nr. 2 TDDDG). Es enthält keine personenbezogenen Daten.</li>
-        <li><strong>Konto:</strong> E-Mail-Adresse, Anzeigename, ggf. Firmenname, Passwort (nur als Argon2id-Hash), Rolle. Das Geburtsdatum wird bei der Registrierung nur geprüft und nicht gespeichert.</li>
+        <li><strong>Konto:</strong> E-Mail-Adresse, Anzeigename, ggf. Firmenname, Passwort (nur als Argon2id-Hash), Rolle.</li>
         <li><strong>Sitzung:</strong> ein Sitzungs-Cookie; serverseitig gespeichert werden nur ein Hash des Tokens, ein gekürzter Hash der IP-Adresse und der Browser-Typ.</li>
         <li><strong>Identitätsprüfung:</strong> Ausweis- bzw. Nachweisbilder werden verschlüsselt übertragen, in einem privaten Speicherbereich abgelegt, nur von berechtigtem Personal eingesehen und nach Abschluss der Prüfung gelöscht. Gespeichert bleiben Prüfergebnis, Dokumenttyp und Geburtsjahr.</li>
         <li><strong>Sedcards und Bilder:</strong> die von dir eingegebenen Inhalte. Bild-Metadaten (EXIF, GPS) werden beim Upload entfernt.</li>

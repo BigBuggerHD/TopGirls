@@ -46,8 +46,8 @@ export async function registerAction(_: ActionState, formData: FormData): Promis
     data: {
       email: d.email,
       passwordHash: await hashPassword(d.password),
-      displayName: d.displayName,
-      companyName: d.companyName || null,
+      // Anzeigename vorläufig aus der E-Mail-Adresse; änderbar in den Kontoeinstellungen
+      displayName: d.email.split("@")[0].slice(0, 60) || "Mitglied",
       role: "MEMBER",
       termsAcceptedAt: new Date(),
     },

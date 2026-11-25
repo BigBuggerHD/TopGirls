@@ -13,7 +13,7 @@
 | Uploads | Größenlimit, Magic Bytes, Pixel-Limit, Neu-Encodierung (Entfernung von EXIF/GPS), private Ablage, Auslieferung mit Zugriffsprüfung und `nosniff` |
 | Zugriffskontrolle | RBAC (`src/lib/rbac.ts`) in allen Layouts, Actions und APIs; Eigentumsprüfung bei allen Objekten |
 | Protokollierung | Audit-Log für Anmeldungen, Moderations- und Admin-Aktionen, Token-Buchungen, Datenexporte (IP nur als gekürzter, gesalzener Hash) |
-| DSGVO | Datenexport (Art. 15/20), Kontolöschung mit Anonymisierung (Art. 17), Löschung von Ausweisdokumenten nach Prüfung, Geburtsdatum wird nicht gespeichert, nur technisch notwendige Cookies, aggregierte Statistiken |
+| DSGVO | Datenexport (Art. 15/20), Kontolöschung mit Anonymisierung (Art. 17), Löschung von Ausweisdokumenten nach Prüfung, nur technisch notwendige Cookies, aggregierte Statistiken |
 | Missbrauchsschutz | ID-/Altersprüfung, Einwilligungsnachweise, Meldeverfahren mit Priorität und Sofortdeaktivierung, Bild-Hash-Sperrliste, Inhaltsfilter, Blockieren in Nachrichten |
 
 ## Für den Produktivbetrieb

@@ -13,20 +13,13 @@ export const passwordSchema = z
 
 export const emailSchema = z.string().trim().toLowerCase().email("Bitte gib eine gültige E-Mail-Adresse ein.").max(200);
 
-export const registerSchema = z
-  .object({
-    displayName: trimmed(2, 60, "Bitte gib einen Namen mit mindestens 2 Zeichen ein."),
-    email: emailSchema,
-    password: passwordSchema,
-    passwordConfirm: z.string(),
-    companyName: z.string().trim().max(120).optional(),
-    birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Bitte gib dein Geburtsdatum an."),
-    terms: z.literal("on", { message: "Bitte akzeptiere die AGB und die Datenschutzerklärung." }),
-    adult: z.literal("on", { message: "Bitte bestätige, dass du volljährig bist." }),
-  })
-  .refine((d) => d.password === d.passwordConfirm, { path: ["passwordConfirm"], message: "Die Passwörter stimmen nicht überein." })
-  .refine((d) => ageFromBirthDate(d.birthDate) >= 18, { path: ["birthDate"], message: "Die Registrierung ist erst ab 18 Jahren möglich." })
-  .refine((d) => ageFromBirthDate(d.birthDate) <= 100, { path: ["birthDate"], message: "Bitte gib ein gültiges Geburtsdatum an." });
+/** Registrierung: nur E-Mail und Passwort sowie die Pflichtbestätigungen (Volljährigkeit, AGB/Datenschutz). */
+export const registerSchema = z.object({
+  email: emailSchema,
+  password: passwordSchema,
+  terms: z.literal("on", { message: "Bitte akzeptiere die AGB und die Datenschutzerklärung." }),
+  adult: z.literal("on", { message: "Bitte bestätige, dass du volljährig bist." }),
+});
 
 export function ageFromBirthDate(iso: string): number {
   const b = new Date(`${iso}T00:00:00Z`);

@@ -31,28 +31,12 @@ export function RegisterForm() {
   return (
     <form action={action} className="space-y-5" noValidate>
       <FormMessage state={state} />
-      <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Anzeigename" name="displayName" errors={e.displayName} required>
-          <Input id="displayName" name="displayName" autoComplete="nickname" />
-        </Field>
-        <Field label="Geburtsdatum" name="birthDate" errors={e.birthDate} required hint="Wird nur zur Altersprüfung verwendet und nicht gespeichert.">
-          <Input id="birthDate" name="birthDate" type="date" />
-        </Field>
-      </div>
-      <Field label="Firmenname (optional)" name="companyName" errors={e.companyName} hint="Nur für Agenturen, Clubs, Studios und andere Unternehmen.">
-        <Input id="companyName" name="companyName" autoComplete="organization" />
-      </Field>
       <Field label="E-Mail-Adresse" name="email" errors={e.email} required>
         <Input id="email" name="email" type="email" autoComplete="email" />
       </Field>
-      <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Passwort" name="password" errors={e.password} required hint="Mind. 10 Zeichen, Groß-/Kleinbuchstaben und Ziffer.">
-          <Input id="password" name="password" type="password" autoComplete="new-password" />
-        </Field>
-        <Field label="Passwort wiederholen" name="passwordConfirm" errors={e.passwordConfirm} required>
-          <Input id="passwordConfirm" name="passwordConfirm" type="password" autoComplete="new-password" />
-        </Field>
-      </div>
+      <Field label="Passwort" name="password" errors={e.password} required hint="Mind. 10 Zeichen, Groß-/Kleinbuchstaben und Ziffer.">
+        <Input id="password" name="password" type="password" autoComplete="new-password" />
+      </Field>
       <div className="space-y-3 rounded-lg border border-border bg-background-alt p-4 text-sm">
         <label className="flex items-start gap-3">
           <Checkbox name="adult" className="mt-0.5" />
@@ -65,9 +49,6 @@ export function RegisterForm() {
         </label>
         {e.terms?.map((m) => <p key={m} className="text-xs text-danger">{m}</p>)}
       </div>
-      <p className="text-xs leading-relaxed text-subtle">
-        Ein Konto für alle: Anbieterinnen, Agenturen, Clubs, Studios und weitere Inserenten. Vor der Veröffentlichung von Inseraten ist eine Identitäts- und Altersprüfung erforderlich. Anbieterinnen in Deutschland benötigen eine gültige Anmeldebescheinigung nach dem Prostituiertenschutzgesetz.
-      </p>
       <SubmitButton className="w-full" size="lg" pendingText="Konto wird erstellt …">Konto erstellen</SubmitButton>
     </form>
   );

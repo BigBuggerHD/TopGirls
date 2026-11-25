@@ -3,13 +3,14 @@ import { ageFromBirthDate, parseEuroToCents, passwordSchema, registerSchema } fr
 import { formatDate, formatEuro } from "@/lib/format";
 import { safeRedirectPath, slugify } from "@/lib/utils";
 
-const base = { displayName: "Test", email: "a@b.de", password: "Sicher12345", passwordConfirm: "Sicher12345", terms: "on", adult: "on" };
+const base = { email: "a@b.de", password: "Sicher12345", terms: "on", adult: "on" };
 
 describe("Validierung", () => {
-  it("verlangt Volljährigkeit bei der Registrierung", () => {
-    const y = new Date().getFullYear();
-    expect(registerSchema.safeParse({ ...base, birthDate: `${y - 17}-01-01` }).success).toBe(false);
-    expect(registerSchema.safeParse({ ...base, birthDate: `${y - 30}-01-01` }).success).toBe(true);
+  it("Registrierung braucht nur E-Mail, Passwort und die Pflichtbestätigungen", () => {
+    expect(registerSchema.safeParse(base).success).toBe(true);
+    expect(registerSchema.safeParse({ ...base, adult: undefined }).success).toBe(false);
+    expect(registerSchema.safeParse({ ...base, terms: undefined }).success).toBe(false);
+    expect(registerSchema.safeParse({ ...base, email: "keine-mail" }).success).toBe(false);
   });
   it("berechnet das Alter korrekt", () => {
     const d = new Date();

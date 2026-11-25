@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Registrieren" };
 export default async function RegisterPage() {
   if (await getCurrentUser()) redirect("/dashboard");
   return (
-    <AuthCard wide title="Konto erstellen" subtitle="Registriere dich kostenlos bei Top Girls. Die Registrierung ist nur für Volljährige möglich.">
+    <AuthCard title="Konto erstellen" subtitle="Kostenlos registrieren – nur für Volljährige. Alle weiteren Angaben machst du später im Dashboard.">
       <RegisterForm />
       <p className="mt-6 text-center text-sm text-muted">
         Bereits registriert? <Link href="/login" className="text-gold hover:underline">Zum Login</Link>
