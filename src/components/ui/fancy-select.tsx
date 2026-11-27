@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
  * Der gewählte Wert wird über ein verstecktes Feld mit dem Formular gesendet.
  */
 export function FancySelect({
-  name, options, defaultValue = "", placeholder = "Keine Angabe", allowEmpty = true, ariaLabel, className, onChange,
+  name, options, defaultValue = "", placeholder = "Keine Angabe", allowEmpty = true, ariaLabel, className, onChange, disabled = false,
 }: {
   name: string;
   options: { value: string; label: string }[];
@@ -20,6 +20,7 @@ export function FancySelect({
   ariaLabel?: string;
   className?: string;
   onChange?: (value: string) => void;
+  disabled?: boolean;
 }) {
   const [value, setValue] = useState(defaultValue);
   const all = allowEmpty ? [{ value: "", label: placeholder }, ...options] : options;
@@ -34,9 +35,11 @@ export function FancySelect({
       <DropdownMenu.Root modal={false}>
         <DropdownMenu.Trigger
           aria-label={ariaLabel}
+          disabled={disabled}
           className={cn(
             "group flex h-10 w-full items-center justify-between rounded-md border border-border bg-background-alt px-3 text-left text-sm transition-colors hover:border-border-strong focus:border-gold/70 focus:outline-none data-[state=open]:border-gold/70",
             value ? "text-foreground" : "text-subtle",
+            "disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-border",
             className,
           )}
         >
@@ -45,6 +48,11 @@ export function FancySelect({
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
           <DropdownMenu.Content
+            // Lange Listen (z. B. Uhrzeiten): beim Öffnen zur aktuellen Auswahl scrollen
+            ref={(el) => {
+              const item = el?.querySelector<HTMLElement>('[data-state="checked"]');
+              if (el && item) requestAnimationFrame(() => { el.scrollTop = item.offsetTop - el.clientHeight / 2 + item.clientHeight / 2; });
+            }}
             align="start"
             sideOffset={6}
             className="z-50 max-h-72 w-[var(--radix-dropdown-menu-trigger-width)] overflow-y-auto rounded-lg border border-border bg-surface p-1.5 shadow-2xl shadow-black/60"
