@@ -180,6 +180,7 @@ model FilterDefinition {
   active       Boolean    @default(true)
   showInSearch Boolean    @default(true)
   perPerson    Boolean    @default(false) // bei Duo-Profilen für jede Person getrennt
+  section      String     @default("eigenschaften") // "eigenschaften" (Assistent Schritt 1) oder "service" (Schritt 3)
   minValue     Int?
   maxValue     Int?
   createdAt    DateTime   @default(now())

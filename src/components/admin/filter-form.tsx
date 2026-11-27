@@ -1,8 +1,9 @@
 import { saveFilterAction } from "@/actions/admin";
 import { Button } from "@/components/ui/button";
 import { HiddenBack, inputCls } from "./ui";
+import { FILTER_SECTIONS } from "@/lib/filter-sections";
 
-type F = { id: string; key: string; label: string; type: string; unit: string | null; helpText: string | null; sortOrder: number; minValue: number | null; maxValue: number | null; active: boolean; showInSearch: boolean; perPerson: boolean; categoryIds: string[] };
+type F = { id: string; key: string; label: string; type: string; unit: string | null; helpText: string | null; sortOrder: number; minValue: number | null; maxValue: number | null; active: boolean; showInSearch: boolean; perPerson: boolean; section: string; categoryIds: string[] };
 
 export function FilterForm({ f, categories, back }: { f?: F; categories: { id: string; name: string }[]; back: string }) {
   return (
@@ -14,6 +15,11 @@ export function FilterForm({ f, categories, back }: { f?: F; categories: { id: s
       <label>Typ
         <select name="type" defaultValue={f?.type ?? "SELECT"} className={`${inputCls} w-full`}>
           <option value="SELECT">Einfachauswahl</option><option value="MULTISELECT">Mehrfachauswahl</option><option value="BOOLEAN">Ja/Nein</option><option value="NUMBER">Zahl (Bereich)</option>
+        </select>
+      </label>
+      <label>Bereich im Assistenten
+        <select name="section" defaultValue={f?.section ?? "eigenschaften"} className={`${inputCls} w-full`}>
+          {Object.entries(FILTER_SECTIONS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
       </label>
       <label>Sortierung<input name="sortOrder" type="number" defaultValue={f?.sortOrder ?? 0} className={`${inputCls} w-full`} /></label>

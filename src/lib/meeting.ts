@@ -13,5 +13,5 @@ export function meetingTypes(p: WithMeeting): { incall: boolean; outcall: boolea
   return { incall: values.has(INCALL_VALUE), outcall: values.has(OUTCALL_VALUE) };
 }
 
-/** Eigenschaften, die im Sedcard-Assistenten vorerst nicht abgefragt werden (vorhandene Werte bleiben erhalten). */
-export const WIZARD_HIDDEN_FILTER_KEYS = [MEETING_FILTER_KEY, "leistungen"];
+/** Ort bei Outcall (Hotel / Privat / Privat/Hotel) – nur sinnvoll, wenn Outcall gewählt ist. */
+export const OUTCALL_PLACE_KEY = "outcall_ort";

@@ -24,7 +24,7 @@ export async function CategorySearch({ slug, basePath, searchParams }: { slug?: 
   await trackProfiles([...result.items, ...result.sponsored].map((p) => p.id), "impressions");
 
   const clientFilters: ClientFilter[] = filters.map((f) => ({
-    key: f.key, label: f.label, type: f.type, unit: f.unit, minValue: f.minValue, maxValue: f.maxValue,
+    key: f.key, label: f.label, type: f.type, unit: f.unit, minValue: f.minValue, maxValue: f.maxValue, section: f.section,
     options: f.options.map((o) => ({ value: o.value, label: o.label })),
   }));
 

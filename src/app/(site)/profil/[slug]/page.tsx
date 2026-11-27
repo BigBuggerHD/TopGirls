@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BadgeCheck, Car, Check, ChevronDown, Clock, House, Languages, MapPin, Sparkles } from "lucide-react";
-import { MEETING_FILTER_KEY, meetingTypes } from "@/lib/meeting";
+import { MEETING_FILTER_KEY, OUTCALL_PLACE_KEY, meetingTypes } from "@/lib/meeting";
 import { db } from "@/lib/db";
 import { publicProfileWhere } from "@/lib/queries/profiles";
 import { trackProfiles } from "@/lib/stats";
@@ -50,11 +50,10 @@ export default async function ProfilePage({ params }: Params) {
 
   const meeting = meetingTypes(p);
 
-  // Eigenschaften-Tabelle: Alter + ALLE aktiven Eigenschaften der Kategorie (ohne Angabe: „–“),
-  // außer Treffpunkt (Incall/Outcall-Symbole) und Leistungen (eigene Zeile darunter)
-  const HIDDEN_IN_TABLE = [MEETING_FILTER_KEY, "leistungen"];
+  // Eigenschaften-Tabelle: Alter + ALLE aktiven Eigenschaften der Kategorie (ohne Angabe: „–“).
+  // Service-Angaben (Bereich „service“) stehen im eigenen Block darunter.
   const categoryFilters = await db.filterDefinition.findMany({
-    where: { active: true, key: { notIn: HIDDEN_IN_TABLE }, categories: { some: { categoryId: p.categoryId } } },
+    where: { active: true, section: "eigenschaften", categories: { some: { categoryId: p.categoryId } } },
     orderBy: { sortOrder: "asc" },
   });
   const duo = p.profileType === "DUO";
@@ -79,7 +78,20 @@ export default async function ProfilePage({ params }: Params) {
   const noMeetingChoice = !meeting.incall && !meeting.outcall;
   const showIncall = meeting.incall || noMeetingChoice;
   const showOutcall = meeting.outcall || noMeetingChoice;
-  const services = p.attributes.find((a) => a.filter.key === "leistungen" && a.filter.active)?.options.map((o) => o.option.label) ?? [];
+  // Service: nur Angaben mit Auswahl, Reihenfolge wie im Assistenten
+  const serviceAttrs = p.attributes
+    .filter((a) => a.person === 1 && a.filter.active && a.filter.section === "service")
+    .map((a) => ({ key: a.filter.key, label: a.filter.label, type: a.filter.type, bool: a.boolValue, items: a.options.map((o) => o.option).filter((o) => o.active).sort((x, y) => x.sortOrder - y.sortOrder).map((o) => o.label) }));
+  const serviceItems = (key: string) => serviceAttrs.find((a) => a.key === key)?.items ?? [];
+  const outcallPlace = serviceItems(OUTCALL_PLACE_KEY)[0];
+  const serviceSummary = [
+    { label: "Wen treff ich?", value: serviceItems("wen_treff_ich").join(", ") },
+    { label: "Treffmöglichkeiten", value: serviceItems(MEETING_FILTER_KEY).map((l) => (l === "Outcall" && outcallPlace ? `Outcall (${outcallPlace})` : l)).join(", ") },
+    { label: "Auch mit", value: serviceItems("auch_mit").join(", ") },
+  ].filter((r) => r.value);
+  const serviceGroups = serviceAttrs.filter((a) => !["wen_treff_ich", MEETING_FILTER_KEY, OUTCALL_PLACE_KEY, "auch_mit"].includes(a.key) && a.type !== "BOOLEAN" && a.items.length);
+  const moreOnRequest = serviceAttrs.some((a) => a.type === "BOOLEAN" && a.key === "weitere_services" && a.bool);
+  const serviceCount = serviceGroups.reduce((n, g) => n + g.items.length, 0);
   const availability = (p.availability ?? {}) as Availability;
   const hasAvailability = hasAnyAvailability(availability);
 
@@ -221,27 +233,42 @@ export default async function ProfilePage({ params }: Params) {
         </section>
         </div>
 
-        {/* Zeile 3: Leistungen als aufklappbares Menü – von der Verfügbarkeit bis zum Ende der Preistabelle */}
+        {/* Zeile 3: Service als aufklappbares Menü – von der Verfügbarkeit bis zum Ende der Preistabelle */}
         <details className="group rounded-xl border border-border bg-surface lg:col-span-2 xl:mr-[calc(280px+2rem)]">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 [&::-webkit-details-marker]:hidden">
             <span className="flex items-center gap-2 font-display text-2xl text-white">
-              <Sparkles className="size-5 text-gold" /> Leistungen
-              <span className="font-sans text-sm text-subtle">({services.length})</span>
+              <Sparkles className="size-5 text-gold" /> Service
+              <span className="font-sans text-sm text-subtle">({serviceCount})</span>
             </span>
             <ChevronDown className="size-5 text-gold transition-transform duration-200 group-open:rotate-180" />
           </summary>
-          <div className="border-t border-border px-5 py-5">
-            {services.length ? (
-              <ul className="grid gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
-                {services.map((s) => (
-                  <li key={s} className="flex items-center gap-2 border-b border-border py-2 text-sm text-foreground">
-                    <Check className="size-4 shrink-0 text-gold" /> {s}
-                  </li>
+          <div className="space-y-6 border-t border-border px-5 py-5">
+            {serviceSummary.length ? (
+              <dl className="divide-y divide-border text-sm">
+                {serviceSummary.map((r) => (
+                  <div key={r.label} className="grid grid-cols-[minmax(0,10rem)_1fr] gap-4 py-2">
+                    <dt className="text-subtle">{r.label}</dt>
+                    <dd className="text-foreground">{r.value}</dd>
+                  </div>
                 ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-subtle">Keine Leistungen angegeben.</p>
-            )}
+              </dl>
+            ) : null}
+            {serviceGroups.length ? (
+              <div className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
+                {serviceGroups.map((g) => (
+                  <div key={g.key}>
+                    <p className="mb-2 text-xs uppercase tracking-wider text-gold">{g.label}</p>
+                    <ul className="space-y-1.5">
+                      {g.items.map((s) => (
+                        <li key={s} className="flex items-center gap-2 text-sm text-foreground"><Check className="size-4 shrink-0 text-gold" /> {s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {moreOnRequest ? <p className="text-sm text-gold-light">Weitere Services auf Anfrage.</p> : null}
+            {!serviceSummary.length && !serviceGroups.length && !moreOnRequest ? <p className="text-sm text-subtle">Keine Angaben zum Service.</p> : null}
           </div>
         </details>
       </div>

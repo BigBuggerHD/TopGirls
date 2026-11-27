@@ -86,7 +86,7 @@ export async function reviewImageAction(fd: FormData) {
     // "ban" = Hash-Sperre: Bild kann nirgends erneut hochgeladen werden (z. B. nicht einvernehmliche Aufnahmen)
     await db.profileImage.update({ where: { id }, data: { status: "REJECTED", rejectReason: decision === "ban" ? `[SPERRE] ${reason}` : reason } });
     if (decision === "ban") await db.profileImage.updateMany({ where: { sha256: img.sha256, id: { not: id } }, data: { status: "REJECTED", rejectReason: `[SPERRE] ${reason}` } });
-    await notify(img.profile.ownerId, "Bild abgelehnt", `Ein Bild deiner Sedcard „${img.profile.stageName}“ wurde abgelehnt: ${reason}`, `/dashboard/sedcards/${img.profileId}?schritt=4`);
+    await notify(img.profile.ownerId, "Bild abgelehnt", `Ein Bild deiner Sedcard „${img.profile.stageName}“ wurde abgelehnt: ${reason}`, `/dashboard/sedcards/${img.profileId}?schritt=5`);
   }
   await audit(mod.id, `image.${decision}`, { type: "ProfileImage", id }, { reason });
   revalidatePath("/admin/bilder");
@@ -111,7 +111,7 @@ export async function reviewVerificationAction(fd: FormData) {
   ]);
   // Datenminimierung: Dokumente nach der Entscheidung löschen
   for (const k of [v.documentKey, v.selfieKey]) if (k) await storage().delete(k).catch(() => {});
-  await notify(v.userId, approve ? "Verifizierung erfolgreich" : "Verifizierung abgelehnt", approve ? "Deine Prüfung wurde erfolgreich abgeschlossen." : `Grund: ${note}`, v.profileId ? `/dashboard/sedcards/${v.profileId}?schritt=6` : "/dashboard/verifizierung");
+  await notify(v.userId, approve ? "Verifizierung erfolgreich" : "Verifizierung abgelehnt", approve ? "Deine Prüfung wurde erfolgreich abgeschlossen." : `Grund: ${note}`, v.profileId ? `/dashboard/sedcards/${v.profileId}?schritt=7` : "/dashboard/verifizierung");
   await audit(mod.id, `verification.${approve ? "approve" : "reject"}`, { type: "IdentityVerification", id }, { note });
   revalidatePath("/admin/verifizierungen");
   back(fd, "/admin/verifizierungen");
@@ -365,6 +365,7 @@ export async function saveFilterAction(fd: FormData) {
     id: z.string().optional(), key: z.string().regex(/^[a-z0-9_]{2,40}$/, "Schlüssel: nur a-z, 0-9, _"), label: z.string().trim().min(2).max(60),
     type: z.enum(["SELECT", "MULTISELECT", "BOOLEAN", "NUMBER"]), unit: z.string().max(10).optional(), helpText: z.string().max(200).optional(),
     sortOrder: z.coerce.number().int().default(0), minValue: z.string().optional(), maxValue: z.string().optional(),
+    section: z.enum(["eigenschaften", "service"]).default("eigenschaften"),
   }).safeParse(Object.fromEntries(fd));
   if (!parsed.success) return back(fd, "/admin/filter", "fehler=ungueltig");
   const { id, minValue, maxValue, ...d } = parsed.data;

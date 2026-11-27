@@ -12,6 +12,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { randomUUID, createHash } from "node:crypto";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { SERVICE_FILTERS } from "./service-filters";
 
 const db = new PrismaClient();
 const PASSWORD = "TopGirls!2026";
@@ -146,7 +147,7 @@ async function main() {
   // ── Dynamische Filter ──
   // Eigenschaften der Kategorie „Frauen“ gemäß Vorgabe „Allgemein“ (Reihenfolge = sortOrder, perPerson = bei Duo je Person).
   // Einige Filter legen die Migrationen bereits an – vorhandene werden hier aktualisiert statt doppelt angelegt.
-  type F = { key: string; label: string; type: FilterType; unit?: string; min?: number; max?: number; cats: string[]; options?: [string, string][]; sort: number; perPerson?: boolean; showInSearch?: boolean };
+  type F = { key: string; label: string; type: FilterType; unit?: string; min?: number; max?: number; cats: string[]; options?: [string, string][]; sort: number; perPerson?: boolean; showInSearch?: boolean; section?: "eigenschaften" | "service" };
   const o = (...labels: string[]): [string, string][] => labels.map((l) => [l.toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""), l]);
   const filterData: F[] = [
     { key: "geschlecht", label: "Geschlecht", type: "SELECT", cats: ["frauen"], options: o("Mann", "Frau", "Trans"), sort: 1, perPerson: true },
@@ -165,7 +166,9 @@ async function main() {
     { key: "tattoos", label: "Tattoos", type: "SELECT", cats: ["frauen"], options: o("Keine", "Wenige", "Mehrere", "Viele"), sort: 14, perPerson: true },
     { key: "intimbereich", label: "Rasiert", type: "SELECT", cats: ["frauen"], options: [["rasiert", "Rasiert"], ["natuerlich", "Unrasiert"]], sort: 15, perPerson: true },
     { key: "raucher", label: "Raucher", type: "SELECT", cats: ["frauen"], options: o("Nein", "Gelegentlich", "Ja"), sort: 16, perPerson: true },
-    { key: "treffpunkt", label: "Treffpunkt", type: "MULTISELECT", cats: ["frauen"], options: o("Eigene Räumlichkeiten", "Haus- & Hotelbesuche", "Begleitung zu Events"), sort: 50 },
+    // Service (Assistent Schritt 3) gemäß Vorgabe „Service“; Treffmöglichkeiten-Werte bleiben für die Incall/Outcall-Symbole gleich
+    { key: "treffpunkt", label: "Treffmöglichkeiten", type: "MULTISELECT", cats: ["frauen"], options: [["eigene-raeumlichkeiten", "Incall (bei mir)"], ["haus-hotelbesuche", "Outcall"]], sort: 20, section: "service" },
+    ...SERVICE_FILTERS.map((f): F => ({ key: f.key, label: f.label, type: f.type, cats: ["frauen"], options: f.options, sort: f.sort, showInSearch: f.showInSearch, section: "service" })),
     { key: "online_format", label: "Online-Format", type: "MULTISELECT", cats: ["online-inserate"], options: o("Videochat", "Textchat", "Telefon"), sort: 51 },
     { key: "massagearten", label: "Massagearten", type: "MULTISELECT", cats: ["massagen"], options: o("Klassisch", "Aromaöl", "Thai", "Hot Stone", "Tantra"), sort: 52 },
     { key: "ausstattung", label: "Ausstattung", type: "MULTISELECT", cats: ["clubs", "massagen"], options: o("Bar", "Sauna", "Whirlpool", "Dusche", "Lounge"), sort: 53 },
@@ -175,17 +178,17 @@ async function main() {
   ];
   const filters: Record<string, { id: string; type: FilterType; options: { id: string; value: string }[] }> = {};
   for (const f of filterData) {
-    const def = { label: f.label, type: f.type, unit: f.unit ?? null, minValue: f.min ?? null, maxValue: f.max ?? null, sortOrder: f.sort, perPerson: !!f.perPerson, showInSearch: f.showInSearch ?? true, active: true };
+    const def = { label: f.label, type: f.type, unit: f.unit ?? null, minValue: f.min ?? null, maxValue: f.max ?? null, sortOrder: f.sort, perPerson: !!f.perPerson, showInSearch: f.showInSearch ?? true, active: true, section: f.section ?? "eigenschaften" };
     const fd = await db.filterDefinition.upsert({ where: { key: f.key }, create: { key: f.key, ...def }, update: def });
     for (const [j, [value, label]] of (f.options ?? []).entries()) {
       await db.filterOption.upsert({ where: { filterId_value: { filterId: fd.id, value } }, create: { filterId: fd.id, value, label, sortOrder: j }, update: { label, sortOrder: j, active: true } });
     }
     await db.filterCategory.createMany({ data: f.cats.map((slug) => ({ filterId: fd.id, categoryId: cats[slug] })), skipDuplicates: true });
   }
-  // Von Migrationen angelegte Zusatz-Filter: Leistungen aktiv mit „Frauen“ verknüpfen; Haarlänge-Altoptionen, Konfektion und Gewicht inaktiv
-  const services = await db.filterDefinition.findUnique({ where: { key: "leistungen" } });
-  if (services) await db.filterCategory.createMany({ data: [{ filterId: services.id, categoryId: cats["frauen"] }], skipDuplicates: true });
-  await db.filterDefinition.updateMany({ where: { key: { in: ["konfektionsgroesse", "gewicht"] } }, data: { active: false } });
+  // Von Migrationen angelegte Alt-Filter: Leistungen (ersetzt durch Service), Konfektion und Gewicht inaktiv;
+  // Treffpunkt-Altoption „Begleitung zu Events“ inaktiv
+  await db.filterDefinition.updateMany({ where: { key: { in: ["konfektionsgroesse", "gewicht", "leistungen"] } }, data: { active: false } });
+  await db.filterOption.updateMany({ where: { value: "begleitung-zu-events", filter: { key: "treffpunkt" } }, data: { active: false } });
   for (const f of await db.filterDefinition.findMany({ include: { options: true } })) {
     filters[f.key] = { id: f.id, type: f.type, options: f.options.filter((x) => x.active).map((x) => ({ id: x.id, value: x.value })) };
   }
@@ -197,15 +200,15 @@ const CITIES = [["Berlin", "10115", "Berlin"], ["Hamburg", "20095", "Hamburg"], 
 
   type P = { owner: string; cat: string; name: string; age?: number; headline: string; premium?: boolean; highlight?: boolean; sponsored?: boolean; status?: "PUBLISHED" | "PENDING_REVIEW" | "DRAFT"; attrs?: Record<string, string[] | number | boolean>; langs?: string[]; duo?: { name: string; age: number; attrs: Record<string, string[] | number | boolean> } };
   const profiles: P[] = [
-    { owner: agency.id, cat: "frauen", name: "Amélie", age: 26, headline: "Charmante Begleitung mit Stil", premium: true, attrs: { haarfarbe: ["blond"], augenfarbe: ["blau"], figur: ["schlank"], koerpergroesse: 172, treffpunkt: ["haus-hotelbesuche", "begleitung-zu-events"], rauchfrei: true }, langs: ["Deutsch", "Französisch", "Englisch"] },
-    { owner: agency.id, cat: "frauen", name: "Valentina", age: 29, headline: "Elegant, gebildet, weltoffen", premium: true, highlight: true, attrs: { haarfarbe: ["bruenett"], augenfarbe: ["braun"], figur: ["sportlich"], koerpergroesse: 168, treffpunkt: ["begleitung-zu-events"] }, langs: ["Deutsch", "Italienisch"] },
+    { owner: agency.id, cat: "frauen", name: "Amélie", age: 26, headline: "Charmante Begleitung mit Stil", premium: true, attrs: { haarfarbe: ["blond"], augenfarbe: ["blau"], figur: ["schlank"], koerpergroesse: 172, treffpunkt: ["haus-hotelbesuche"], rauchfrei: true }, langs: ["Deutsch", "Französisch", "Englisch"] },
+    { owner: agency.id, cat: "frauen", name: "Valentina", age: 29, headline: "Elegant, gebildet, weltoffen", premium: true, highlight: true, attrs: { haarfarbe: ["bruenett"], augenfarbe: ["braun"], figur: ["sportlich"], koerpergroesse: 168, treffpunkt: ["haus-hotelbesuche"] }, langs: ["Deutsch", "Italienisch"] },
     { owner: agency.id, cat: "frauen", name: "Clara", age: 31, headline: "Stilvolle Abende in Hamburg", sponsored: true, attrs: { haarfarbe: ["rot"], augenfarbe: ["gruen"], figur: ["normal"], koerpergroesse: 175, treffpunkt: ["eigene-raeumlichkeiten"], rauchfrei: true }, langs: ["Deutsch", "Englisch"] },
     { owner: agency.id, cat: "frauen", name: "Isabel", age: 24, headline: "Natürlich und herzlich", attrs: { haarfarbe: ["schwarz"], augenfarbe: ["braun"], figur: ["kurvig"], koerpergroesse: 164, treffpunkt: ["eigene-raeumlichkeiten", "haus-hotelbesuche"] }, langs: ["Deutsch", "Spanisch"] },
     { owner: agency.id, cat: "online-inserate", name: "Luna", age: 27, headline: "Virtuelle Gesellschaft am Abend", highlight: true, attrs: { haarfarbe: ["blond"], augenfarbe: ["gruen"], online_format: ["videochat", "textchat"] }, langs: ["Deutsch", "Englisch"] },
     { owner: agency.id, cat: "frauen", name: "Noemi", age: 33, headline: "Reife Eleganz", status: "PENDING_REVIEW", attrs: { haarfarbe: ["bruenett"], figur: ["schlank"], koerpergroesse: 170 } },
     { owner: provider.id, cat: "frauen", name: "Lara", age: 28, headline: "Unabhängig. Diskret. Zuverlässig.", premium: true, attrs: { haarfarbe: ["bruenett"], augenfarbe: ["gruen"], figur: ["sportlich"], koerpergroesse: 169, treffpunkt: ["eigene-raeumlichkeiten"], rauchfrei: true }, langs: ["Deutsch", "Englisch"] },
     { owner: extraProviders[0].id, cat: "frauen", name: "Sophie", age: 25, headline: "Lebensfroh und unkompliziert", attrs: { haarfarbe: ["blond"], augenfarbe: ["blau"], figur: ["normal"], koerpergroesse: 166, treffpunkt: ["haus-hotelbesuche"] }, langs: ["Deutsch"] },
-    { owner: extraProviders[1].id, cat: "frauen", name: "Mila", age: 30, headline: "Kultur, Kunst und gute Gespräche", attrs: { haarfarbe: ["schwarz"], augenfarbe: ["braun"], figur: ["schlank"], koerpergroesse: 178, treffpunkt: ["begleitung-zu-events"] }, langs: ["Deutsch", "Russisch", "Englisch"] },
+    { owner: extraProviders[1].id, cat: "frauen", name: "Mila", age: 30, headline: "Kultur, Kunst und gute Gespräche", attrs: { haarfarbe: ["schwarz"], augenfarbe: ["braun"], figur: ["schlank"], koerpergroesse: 178, treffpunkt: ["haus-hotelbesuche"] }, langs: ["Deutsch", "Russisch", "Englisch"] },
     { owner: extraProviders[2].id, cat: "online-inserate", name: "Elena", age: 35, headline: "Ehrliche Gespräche per Telefon und Video", attrs: { haarfarbe: ["rot"], online_format: ["telefon", "videochat"] }, langs: ["Deutsch", "Griechisch"] },
     { owner: extraProviders[3].id, cat: "frauen", name: "Jade", age: 23, headline: "Neu in Leipzig", attrs: { haarfarbe: ["schwarz"], augenfarbe: ["grau"], figur: ["sportlich"], koerpergroesse: 171 }, langs: ["Deutsch", "Englisch"] },
     { owner: club.id, cat: "clubs", name: "Club Aurum", headline: "Gehobene Bar-Atmosphäre im Herzen der Stadt", premium: true, attrs: { ausstattung: ["bar", "sauna", "lounge"], parkplaetze: true, barrierefrei: true, rauchfrei: false }, langs: ["Deutsch", "Englisch"] },
@@ -231,11 +234,17 @@ const CITIES = [["Berlin", "10115", "Berlin"], ["Hamburg", "20095", "Hamburg"], 
     const slug = `${p.name.toLowerCase().replace(/é/g, "e").replace(/[^a-z0-9]+/g, "-")}-${city.toLowerCase().replace(/ü/g, "ue").replace(/[^a-z0-9]+/g, "-")}-${i + 1}`;
     const isWoman = p.cat === "frauen";
     if (isWoman) {
-      const svc = [["dinner-date", "begleitung-events", "uebernachtung"], ["reisebegleitung", "dinner-date", "wellness"], ["massage", "girlfriend-experience", "dinner-date"], ["begleitung-events", "massage"]][i % 4];
+      // Fiktive Demo-Angaben zum Service
+      const service: Record<string, string[] | boolean> = [
+        { wen_treff_ich: ["maenner", "paare"], outcall_ort: ["hotel"], service_kuessen: ["kuessen-bei-sympathie"], service_wellness_massagen: ["entspannungsmassage", "oelmassagen"], service_sonstiges: ["striptease", "rollenspiele"], weitere_services: true },
+        { wen_treff_ich: ["maenner"], outcall_ort: ["privat-hotel"], auch_mit: ["alter-ueber-60"], service_klassische_massagen: ["klassische-massagen", "ruecken-massage"], service_sonstiges: ["duschspiele"] },
+        { wen_treff_ich: ["maenner", "frauen", "paare"], auch_mit: ["koerperlicher-behinderung", "alter-ueber-60"], service_wellness_massagen: ["hot-stone-massage", "aromatherapie"], service_fetisch_outfits: ["nylonerotik"] },
+        { wen_treff_ich: ["maenner", "paare"], outcall_ort: ["privat"], service_kuessen: ["kuessen"], service_sonstiges: ["verbalerotik"], weitere_services: true },
+      ][i % 4];
       const { rauchfrei: smokeFree, ...rest } = (p.attrs ?? {}) as Record<string, string[] | number | boolean>;
       p.attrs = {
         ...rest,
-        leistungen: svc,
+        ...service,
         geschlecht: ["frau"],
         koerbchengroesse: [["b", "c", "d", "dd"][i % 4]],
         bh_umfang: [["70", "75", "80", "75"][i % 4]],
@@ -249,6 +258,8 @@ const CITIES = [["Berlin", "10115", "Berlin"], ["Hamburg", "20095", "Hamburg"], 
         piercings: [["wenige", "keine"][i % 2]],
         raucher: [smokeFree === true ? "nein" : ["nein", "gelegentlich"][i % 2]],
       };
+      // Outcall-Ort nur bei Outcall
+      if (!((p.attrs.treffpunkt as string[] | undefined) ?? []).includes("haus-hotelbesuche")) delete p.attrs.outcall_ort;
     }
     const prices = isWoman
       ? [

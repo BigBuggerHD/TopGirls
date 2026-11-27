@@ -20,8 +20,9 @@ import { sendSms, smsDevMode, SmsNotConfiguredError } from "@/lib/sms";
 import { randomInt } from "node:crypto";
 import { audit } from "@/lib/audit";
 import { PERSON_CATEGORIES, requiresModelConsent } from "@/lib/model-consent";
-import { WIZARD_HIDDEN_FILTER_KEYS } from "@/lib/meeting";
 import { WEEKDAYS } from "@/lib/labels";
+import { MEETING_FILTER_KEY, OUTCALL_VALUE } from "@/lib/meeting";
+import type { FilterSection } from "@/lib/filter-sections";
 import { MAX_PRICE_ROWS, type PriceRow } from "@/lib/prices";
 import type { Availability } from "@/lib/availability";
 import {
@@ -93,8 +94,21 @@ export async function saveProfileDataAction(_: ActionState, fd: FormData): Promi
       ...(changed ? reviewIfPublished(p.status) : {}),
     },
   });
-  await writeAttributes({ id: p.id, profileType: d.profileType, categoryId: cat.id }, fd);
+  await writeAttributes({ id: p.id, profileType: d.profileType, categoryId: cat.id }, fd, "eigenschaften");
   return done(p.id, 1, fd);
+}
+
+/** Schritt 3 „Service“. */
+export async function saveServiceAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  const user = await requireUser();
+  const p = await ownedProfile(String(fd.get("profileId")), user);
+  if (!p) return { ok: false, message: "Sedcard nicht gefunden." };
+  // Outcall-Ort nur speichern, wenn Outcall gewählt ist
+  const meeting = await db.filterDefinition.findUnique({ where: { key: MEETING_FILTER_KEY }, include: { options: true } });
+  const outcallId = meeting?.options.find((o) => o.value === OUTCALL_VALUE)?.id;
+  if (!outcallId || !fd.getAll(`attr_${MEETING_FILTER_KEY}`).includes(outcallId)) fd.delete("attr_outcall_ort");
+  await writeAttributes({ id: p.id, profileType: p.profileType, categoryId: p.categoryId }, fd, "service");
+  return done(p.id, 3, fd);
 }
 
 export async function saveDescriptionAction(_: ActionState, fd: FormData): Promise<ActionState> {
@@ -111,7 +125,7 @@ export async function saveDescriptionAction(_: ActionState, fd: FormData): Promi
     where: { id: p.id },
     data: { description, headline, ...(changed ? reviewIfPublished(p.status) : {}) },
   });
-  return done(p.id, 3, fd);
+  return done(p.id, 4, fd);
 }
 
 /** Schritt 2 „Kontaktdaten“: Telefonnummer, Messenger, Adresse. */
@@ -203,7 +217,7 @@ export async function verifyPhoneCodeAction(profileId: string, rawCode: string):
   return { ok: true, verified: true, phone: v.phone, message: "Telefonnummer verifiziert." };
 }
 
-/** Schritt 5 „Zeiten & Preise“. */
+/** Schritt 6 „Zeiten & Preise“. */
 export async function saveTimesPricesAction(_: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser();
   const p = await ownedProfile(String(fd.get("profileId")), user);
@@ -226,7 +240,7 @@ export async function saveTimesPricesAction(_: ActionState, fd: FormData): Promi
       priceNote: String(fd.get("priceNote") ?? "").trim().slice(0, 300) || null,
     },
   });
-  return done(p.id, 5, fd);
+  return done(p.id, 6, fd);
 }
 
 /** Liest die Preiszeilen (price_label_N, price_in_N, price_out_N). Zeilen ohne Bezeichnung werden ignoriert. */
@@ -249,15 +263,16 @@ function readPrices(fd: FormData): PriceRow[] {
  * Schreibt die Eigenschaften (Formularfelder attr_<key>, bei Duo zusätzlich attr2_<key>) für die Filter der Kategorie.
  * Eigenschaften, die nicht (mehr) zur Kategorie gehören, werden entfernt.
  */
-async function writeAttributes(p: { id: string; profileType: string; categoryId: string }, fd: FormData) {
-  const filters = await db.filterDefinition.findMany({ where: { active: true, categories: { some: { categoryId: p.categoryId } } }, include: { options: { where: { active: true } } } });
-  await db.profileAttribute.deleteMany({ where: { profileId: p.id, filter: { active: true }, filterId: { notIn: filters.map((f) => f.id) } } });
+/** Schreibt die Angaben eines Bereichs („eigenschaften“ = Schritt 1, „service“ = Schritt 3). Andere Bereiche bleiben unverändert. */
+async function writeAttributes(p: { id: string; profileType: string; categoryId: string }, fd: FormData, section: FilterSection) {
+  const filters = await db.filterDefinition.findMany({ where: { active: true, section, categories: { some: { categoryId: p.categoryId } } }, include: { options: { where: { active: true } } } });
+  // Angaben zu Filtern, die nicht (mehr) zur Kategorie gehören, entfernen
+  await db.profileAttribute.deleteMany({ where: { profileId: p.id, filter: { active: true, section, categories: { none: { categoryId: p.categoryId } } } } });
   const duo = p.profileType === "DUO";
   await db.$transaction(async (tx) => {
     // Bei Wechsel von Duo zu Einzel: Angaben der zweiten Person entfernen
-    if (!duo) await tx.profileAttribute.deleteMany({ where: { profileId: p.id, person: 2 } });
+    if (!duo) await tx.profileAttribute.deleteMany({ where: { profileId: p.id, person: 2, filter: { section } } });
     for (const f of filters) {
-      if (WIZARD_HIDDEN_FILTER_KEYS.includes(f.key)) continue; // nicht im Formular → vorhandene Werte unverändert lassen
       const persons = duo && f.perPerson ? [1, 2] : [1];
       for (const person of persons) {
         const name = `${person === 2 ? "attr2" : "attr"}_${f.key}`;

@@ -1,7 +1,7 @@
 "use client";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, SlidersHorizontal, X } from "lucide-react";
 import { Input, Select, Checkbox } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -13,6 +13,8 @@ export type ClientFilter = {
   minValue: number | null;
   maxValue: number | null;
   options: { value: string; label: string }[];
+  /** "service" = eigener, aufklappbarer Block „Service“ */
+  section?: string;
 };
 
 /** Dynamisches Filterpanel: aktualisiert die URL, die Ergebnisse werden serverseitig neu geladen. */
@@ -53,6 +55,60 @@ export function FilterPanel({ filters, categories }: { filters: ClientFilter[]; 
 
   const activeCount = [...sp.keys()].filter((k) => k !== "seite" && k !== "sortierung").length;
 
+  const renderFilter = (f: ClientFilter, hideLegend = false) => {
+    const name = `f_${f.key}`;
+    if (f.type === "BOOLEAN") {
+      return (
+        <label key={f.key} className="flex items-center gap-2 text-sm">
+          <Checkbox checked={sp.get(name) === "1"} onChange={(e) => update((p) => (e.target.checked ? p.set(name, "1") : p.delete(name)))} />
+          {f.label}
+        </label>
+      );
+    }
+    if (f.type === "NUMBER") {
+      return (
+        <fieldset key={f.key} className="space-y-2">
+          <legend className={hideLegend ? "sr-only" : "text-xs uppercase tracking-wider text-subtle"}>{f.label}{f.unit ? ` (${f.unit})` : ""}</legend>
+          <div className="grid grid-cols-2 gap-2">
+            <Input type="number" inputMode="numeric" aria-label={`${f.label} von`} placeholder={`von ${f.minValue ?? ""}`} defaultValue={sp.get(`${name}_min`) ?? ""} onBlur={(e) => update((p) => (e.target.value ? p.set(`${name}_min`, e.target.value) : p.delete(`${name}_min`)))} />
+            <Input type="number" inputMode="numeric" aria-label={`${f.label} bis`} placeholder={`bis ${f.maxValue ?? ""}`} defaultValue={sp.get(`${name}_max`) ?? ""} onBlur={(e) => update((p) => (e.target.value ? p.set(`${name}_max`, e.target.value) : p.delete(`${name}_max`)))} />
+          </div>
+        </fieldset>
+      );
+    }
+    const selected = sp.getAll(name);
+    return (
+      <fieldset key={f.key} className="space-y-2">
+        <legend className={hideLegend ? "sr-only" : "text-xs uppercase tracking-wider text-subtle"}>{f.label}</legend>
+        <div className="flex flex-wrap gap-1.5">
+          {f.options.map((o) => {
+            const on = selected.includes(o.value);
+            return (
+              <button
+                key={o.value}
+                type="button"
+                aria-pressed={on}
+                onClick={() =>
+                  update((p) => {
+                    const cur = p.getAll(name).filter((v) => v !== o.value);
+                    p.delete(name);
+                    const next = on ? cur : f.type === "SELECT" ? [...cur, o.value] : [...cur, o.value];
+                    next.forEach((v) => p.append(name, v));
+                  })
+                }
+                className={`rounded-full border px-3 py-1 text-xs transition-colors ${on ? "border-gold bg-gold/15 text-gold" : "border-border text-muted hover:border-border-strong hover:text-foreground"}`}
+              >
+                {o.label}
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
+    );
+  };
+
+  const serviceFilters = filters.filter((f) => f.section === "service");
+
   const body = (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -76,57 +132,24 @@ export function FilterPanel({ filters, categories }: { filters: ClientFilter[]; 
         <Checkbox checked={sp.get("verifiziert") === "1"} onChange={(e) => update((p) => (e.target.checked ? p.set("verifiziert", "1") : p.delete("verifiziert")))} />
         Nur verifizierte Profile
       </label>
-      {filters.map((f) => {
-        const name = `f_${f.key}`;
-        if (f.type === "BOOLEAN") {
-          return (
-            <label key={f.key} className="flex items-center gap-2 text-sm">
-              <Checkbox checked={sp.get(name) === "1"} onChange={(e) => update((p) => (e.target.checked ? p.set(name, "1") : p.delete(name)))} />
-              {f.label}
-            </label>
-          );
-        }
-        if (f.type === "NUMBER") {
-          return (
-            <fieldset key={f.key} className="space-y-2">
-              <legend className="text-xs uppercase tracking-wider text-subtle">{f.label}{f.unit ? ` (${f.unit})` : ""}</legend>
-              <div className="grid grid-cols-2 gap-2">
-                <Input type="number" inputMode="numeric" aria-label={`${f.label} von`} placeholder={`von ${f.minValue ?? ""}`} defaultValue={sp.get(`${name}_min`) ?? ""} onBlur={(e) => update((p) => (e.target.value ? p.set(`${name}_min`, e.target.value) : p.delete(`${name}_min`)))} />
-                <Input type="number" inputMode="numeric" aria-label={`${f.label} bis`} placeholder={`bis ${f.maxValue ?? ""}`} defaultValue={sp.get(`${name}_max`) ?? ""} onBlur={(e) => update((p) => (e.target.value ? p.set(`${name}_max`, e.target.value) : p.delete(`${name}_max`)))} />
-              </div>
-            </fieldset>
-          );
-        }
-        const selected = sp.getAll(name);
-        return (
-          <fieldset key={f.key} className="space-y-2">
-            <legend className="text-xs uppercase tracking-wider text-subtle">{f.label}</legend>
-            <div className="flex flex-wrap gap-1.5">
-              {f.options.map((o) => {
-                const on = selected.includes(o.value);
-                return (
-                  <button
-                    key={o.value}
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() =>
-                      update((p) => {
-                        const cur = p.getAll(name).filter((v) => v !== o.value);
-                        p.delete(name);
-                        const next = on ? cur : f.type === "SELECT" ? [...cur, o.value] : [...cur, o.value];
-                        next.forEach((v) => p.append(name, v));
-                      })
-                    }
-                    className={`rounded-full border px-3 py-1 text-xs transition-colors ${on ? "border-gold bg-gold/15 text-gold" : "border-border text-muted hover:border-border-strong hover:text-foreground"}`}
-                  >
-                    {o.label}
-                  </button>
-                );
-              })}
-            </div>
-          </fieldset>
-        );
-      })}
+      {filters.filter((f) => f.section !== "service").map((f) => renderFilter(f))}
+      {serviceFilters.length ? (
+        <div className="space-y-1 border-t border-border pt-5">
+          <p className="mb-2 text-xs uppercase tracking-wider text-subtle">Service</p>
+          {serviceFilters.map((f) => {
+            const n = sp.getAll(`f_${f.key}`).length;
+            return (
+              <details key={f.key} open={n > 0} className="group border-b border-border last:border-b-0">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-2.5 text-sm text-foreground [&::-webkit-details-marker]:hidden">
+                  <span>{f.label}{n ? <span className="ml-2 rounded-full bg-gold/15 px-2 py-0.5 text-[11px] text-gold">{n}</span> : null}</span>
+                  <ChevronDown className="size-4 text-gold transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="pb-3">{renderFilter(f, true)}</div>
+              </details>
+            );
+          })}
+        </div>
+      ) : null}
       {activeCount > 0 ? (
         <Button variant="ghost" size="sm" onClick={() => start(() => router.replace(pathname, { scroll: false }))}>
           <X /> Alle Filter zurücksetzen
@@ -143,7 +166,7 @@ export function FilterPanel({ filters, categories }: { filters: ClientFilter[]; 
         </Button>
         {pending ? <span className="text-xs text-subtle">Aktualisiere …</span> : null}
       </div>
-      <div id="filter-panel" className={`${open ? "block" : "hidden"} mb-6 rounded-xl border border-border bg-surface p-5 lg:sticky lg:top-24 lg:mb-0 lg:block`}>
+      <div id="filter-panel" className={`${open ? "block" : "hidden"} mb-6 rounded-xl border border-border bg-surface p-5 lg:sticky lg:top-24 lg:mb-0 lg:block lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto`}>
         <div className="mb-5 hidden items-center justify-between lg:flex">
           <p className="font-display text-xl text-white">Filter</p>
           {pending ? <span className="text-xs text-subtle">Aktualisiere …</span> : null}

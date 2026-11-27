@@ -9,9 +9,8 @@ import { PROFILE_STATUS, VERIFICATION_STATUS } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { parsePrices } from "@/lib/prices";
 import type { Availability } from "@/lib/availability";
-import { WIZARD_HIDDEN_FILTER_KEYS } from "@/lib/meeting";
 import { deleteImageAction, deleteProfileAction, getPublishChecklist, pauseProfileAction, setCoverImageAction } from "@/actions/profiles";
-import { ContactDataStep, ProfileDataStep, DescriptionStep, ImagesStep, TimesPricesStep, ModelConsentUpload, SubmitStep } from "@/components/dashboard/sedcard-steps";
+import { ContactDataStep, ProfileDataStep, ServiceStep, DescriptionStep, ImagesStep, TimesPricesStep, ModelConsentUpload, SubmitStep } from "@/components/dashboard/sedcard-steps";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
@@ -19,12 +18,12 @@ import { Gallery } from "@/components/profiles/gallery";
 
 export const metadata = { title: "Sedcard bearbeiten" };
 
-const STEPS = ["Profildaten", "Kontaktdaten", "Beschreibung", "Bilder", "Zeiten & Preise", "Vorschau & Veröffentlichung"];
+const STEPS = ["Profildaten", "Kontaktdaten", "Service", "Beschreibung", "Bilder", "Zeiten & Preise", "Vorschau & Veröffentlichung"];
 
 export default async function EditSedcardPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ schritt?: string }> }) {
   const user = await requirePermission("profile.own");
   const { id } = await params;
-  const step = Math.min(6, Math.max(1, Number((await searchParams).schritt) || 1));
+  const step = Math.min(STEPS.length, Math.max(1, Number((await searchParams).schritt) || 1));
   const p = await db.profile.findFirst({
     where: { id, ownerId: user.id },
     include: {
@@ -35,10 +34,14 @@ export default async function EditSedcardPage({ params, searchParams }: { params
   });
   if (!p) notFound();
   const categories = await db.category.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } });
-  const filters = step === 1
-    ? await db.filterDefinition.findMany({ where: { active: true, categories: { some: { categoryId: p.categoryId } } }, orderBy: { sortOrder: "asc" }, include: { options: { where: { active: true }, orderBy: { sortOrder: "asc" } } } })
+  // Schritt 1: Eigenschaften, Schritt 3: Service (Bereich der dynamischen Filter)
+  const section = step === 1 ? "eigenschaften" : step === 3 ? "service" : null;
+  const filters = section
+    ? await db.filterDefinition.findMany({ where: { active: true, section, categories: { some: { categoryId: p.categoryId } } }, orderBy: { sortOrder: "asc" }, include: { options: { where: { active: true }, orderBy: { sortOrder: "asc" } } } })
     : [];
-  const checklist = step === 6 ? await getPublishChecklist(p.id) : null;
+  const filterProps = filters.map((f) => ({ id: f.id, key: f.key, label: f.label, type: f.type, unit: f.unit, helpText: f.helpText, minValue: f.minValue, maxValue: f.maxValue, perPerson: f.perPerson, options: f.options.map((o) => ({ id: o.id, label: o.label, value: o.value })) }));
+  const valueProps = p.attributes.map((a) => ({ filterId: a.filterId, person: a.person, numberValue: a.numberValue, boolValue: a.boolValue, optionIds: a.options.map((o) => o.optionId) }));
+  const checklist = step === 7 ? await getPublishChecklist(p.id) : null;
 
   return (
     <div>
@@ -86,8 +89,8 @@ export default async function EditSedcardPage({ params, searchParams }: { params
           <ProfileDataStep
             profile={p}
             categories={categories}
-            filters={filters.filter((f) => !WIZARD_HIDDEN_FILTER_KEYS.includes(f.key)).map((f) => ({ id: f.id, key: f.key, label: f.label, type: f.type, unit: f.unit, helpText: f.helpText, minValue: f.minValue, maxValue: f.maxValue, perPerson: f.perPerson, options: f.options.map((o) => ({ id: o.id, label: o.label })) }))}
-            values={p.attributes.map((a) => ({ filterId: a.filterId, person: a.person, numberValue: a.numberValue, boolValue: a.boolValue, optionIds: a.options.map((o) => o.optionId) }))}
+            filters={filterProps}
+            values={valueProps}
           />
         )}
         {step === 2 && (
@@ -98,8 +101,9 @@ export default async function EditSedcardPage({ params, searchParams }: { params
             }}
           />
         )}
-        {step === 3 && <DescriptionStep profile={p} />}
-        {step === 4 && (
+        {step === 3 && <ServiceStep profileId={p.id} filters={filterProps} values={valueProps} />}
+        {step === 4 && <DescriptionStep profile={p} />}
+        {step === 5 && (
           <ImagesStep
             profileId={p.id}
             images={p.images.map((i) => ({ id: i.id, thumb: mediaUrl(i.thumbKey)!, status: i.status, isCover: i.isCover, rejectReason: i.rejectReason }))}
@@ -107,8 +111,8 @@ export default async function EditSedcardPage({ params, searchParams }: { params
             onCover={setCoverImageAction}
           />
         )}
-        {step === 5 && <TimesPricesStep profile={{ id: p.id, availability: (p.availability ?? {}) as Availability, prices: parsePrices(p.prices), priceNote: p.priceNote }} />}
-        {step === 6 && checklist && (
+        {step === 6 && <TimesPricesStep profile={{ id: p.id, availability: (p.availability ?? {}) as Availability, prices: parsePrices(p.prices), priceNote: p.priceNote }} />}
+        {step === 7 && checklist && (
           <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
             <div>
               <p className="mb-3 text-xs uppercase tracking-wider text-subtle">Vorschau</p>

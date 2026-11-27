@@ -3,7 +3,7 @@ import Image from "next/image";
 import { useActionState, useState, useTransition } from "react";
 import { BadgeCheck, CircleAlert } from "lucide-react";
 import {
-  saveProfileDataAction, saveContactDataAction, saveDescriptionAction, saveTimesPricesAction,
+  saveProfileDataAction, saveContactDataAction, saveServiceAction, saveDescriptionAction, saveTimesPricesAction,
   sendPhoneCodeAction, verifyPhoneCodeAction, submitForReviewAction, uploadImagesAction, uploadModelConsentAction,
   type PhoneCodeState,
 } from "@/actions/profiles";
@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import { formatPhone, normalizePhone } from "@/lib/phone";
 import { districtsForCity } from "@/lib/districts";
 import { WHATSAPP_GREETING } from "@/lib/messenger";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { MEETING_FILTER_KEY, OUTCALL_PLACE_KEY, OUTCALL_VALUE } from "@/lib/meeting";
 
 type Action = (s: ActionState, fd: FormData) => Promise<ActionState>;
 
@@ -229,7 +231,7 @@ export function ImagesStep({ profileId, images, onDelete, onCover }: {
   );
 }
 
-type FilterDef = { id: string; key: string; label: string; type: "SELECT" | "MULTISELECT" | "BOOLEAN" | "NUMBER"; unit: string | null; helpText: string | null; minValue: number | null; maxValue: number | null; perPerson: boolean; options: { id: string; label: string }[] };
+type FilterDef = { id: string; key: string; label: string; type: "SELECT" | "MULTISELECT" | "BOOLEAN" | "NUMBER"; unit: string | null; helpText: string | null; minValue: number | null; maxValue: number | null; perPerson: boolean; options: { id: string; label: string; value?: string }[] };
 type AttrValue = { filterId: string; person: number; numberValue: number | null; boolValue: boolean | null; optionIds: string[] };
 
 
@@ -362,8 +364,98 @@ export function ContactDataStep({ profile }: { profile: ContactDataProfile }) {
   );
 }
 
+/** Häkchen im Pillen-Stil (für kurze Auswahllisten). */
+function CheckPill({ name, value, label, defaultChecked, onChange }: { name: string; value: string; label: string; defaultChecked?: boolean; onChange?: (v: boolean) => void }) {
+  return (
+    <label className="flex cursor-pointer items-center gap-2 rounded-full border border-border px-3.5 py-2 text-sm text-muted transition-colors hover:border-border-strong has-[:checked]:border-gold/70 has-[:checked]:bg-gold/10 has-[:checked]:text-foreground">
+      <Checkbox name={name} value={value} defaultChecked={defaultChecked} onChange={onChange ? (e) => onChange(e.target.checked) : undefined} />
+      {label}
+    </label>
+  );
+}
+
+const SERVICE_TOP_KEYS = ["wen_treff_ich", MEETING_FILTER_KEY, OUTCALL_PLACE_KEY, "auch_mit"];
+
+/** Schritt 3 „Service“: Wen treff ich?, Treffmöglichkeiten, Auch mit, Serviceleistungen (Dropdowns mit Häkchen). */
+export function ServiceStep({ profileId, filters, values }: { profileId: string; filters: FilterDef[]; values: AttrValue[] }) {
+  const byKey = (k: string) => filters.find((f) => f.key === k);
+  const sel = (f: FilterDef) => values.find((v) => v.filterId === f.id && v.person === 1)?.optionIds ?? [];
+  const meeting = byKey(MEETING_FILTER_KEY);
+  const outcallOpt = meeting?.options.find((o) => o.value === OUTCALL_VALUE);
+  const [outcall, setOutcall] = useState(!!meeting && !!outcallOpt && sel(meeting).includes(outcallOpt.id));
+  const place = byKey(OUTCALL_PLACE_KEY);
+  const rest = filters.filter((f) => !SERVICE_TOP_KEYS.includes(f.key));
+  const dropdowns = rest.filter((f) => f.type === "MULTISELECT" || f.type === "SELECT");
+  const flags = rest.filter((f) => f.type === "BOOLEAN");
+
+  const pills = (f: FilterDef | undefined) =>
+    f ? (
+      <fieldset className="space-y-2.5">
+        <legend className="mb-2.5 text-sm font-medium text-foreground/90">{f.label}</legend>
+        <div className="flex flex-wrap gap-2">
+          {f.options.map((o) => <CheckPill key={o.id} name={`attr_${f.key}`} value={o.id} label={o.label} defaultChecked={sel(f).includes(o.id)} />)}
+        </div>
+      </fieldset>
+    ) : null;
+
+  if (!filters.length) return <p className="text-sm text-muted">Für diese Kategorie sind keine Service-Angaben konfiguriert.</p>;
+
+  return (
+    <StepForm action={saveServiceAction} profileId={profileId}>
+      {() => (
+        <div className="space-y-8">
+          <div className="space-y-6">
+            {pills(byKey("wen_treff_ich"))}
+            {meeting ? (
+              <fieldset>
+                <legend className="mb-2.5 text-sm font-medium text-foreground/90">{meeting.label}</legend>
+                <div className="flex flex-wrap items-center gap-2">
+                  {meeting.options.map((o) => (
+                    <CheckPill key={o.id} name={`attr_${meeting.key}`} value={o.id} label={o.label} defaultChecked={sel(meeting).includes(o.id)}
+                      onChange={o.id === outcallOpt?.id ? setOutcall : undefined} />
+                  ))}
+                  {outcall && place ? (
+                    <div className="w-44">
+                      <FancySelect name={`attr_${place.key}`} ariaLabel="Outcall-Ort" placeholder="Wo?" defaultValue={sel(place)[0] ?? ""}
+                        options={place.options.map((o) => ({ value: o.id, label: o.label }))} />
+                    </div>
+                  ) : null}
+                </div>
+              </fieldset>
+            ) : null}
+            {pills(byKey("auch_mit"))}
+          </div>
+
+          {dropdowns.length || flags.length ? (
+            <div className="space-y-5 border-t border-border pt-6">
+              <h3 className="font-display text-xl text-white">Serviceleistungen</h3>
+              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                {dropdowns.map((f) => (
+                  <div key={f.id} className="min-w-0 space-y-1.5">
+                    <Label>{f.label}</Label>
+                    {f.type === "MULTISELECT" ? (
+                      <MultiSelect name={`attr_${f.key}`} ariaLabel={f.label} defaultValue={sel(f)} options={f.options.map((o) => ({ value: o.id, label: o.label }))} />
+                    ) : (
+                      <FancySelect name={`attr_${f.key}`} ariaLabel={f.label} defaultValue={sel(f)[0] ?? ""} options={f.options.map((o) => ({ value: o.id, label: o.label }))} />
+                    )}
+                  </div>
+                ))}
+              </div>
+              {flags.map((f) => (
+                <label key={f.id} className="flex items-center gap-2 text-sm">
+                  <Checkbox name={`attr_${f.key}`} value="yes" defaultChecked={values.find((v) => v.filterId === f.id && v.person === 1)?.boolValue === true} /> {f.label}
+                </label>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      )}
+    </StepForm>
+  );
+}
+
 type Avail = Availability;
-/** Schritt 5 „Zeiten & Preise“. */
+/** Schritt 6 „Zeiten & Preise“. */
 export function TimesPricesStep({ profile }: { profile: { id: string; availability: Avail; prices: PriceRow[]; priceNote: string | null } }) {
   return (
     <StepForm action={saveTimesPricesAction} profileId={profile.id}>
