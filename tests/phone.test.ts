@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { formatPhone, normalizePhone } from "@/lib/phone";
 import { publicLocation } from "@/lib/districts";
+import { parsePrices } from "@/lib/prices";
 import { normalizeTelegramUsername, telegramLink, whatsappLink } from "@/lib/messenger";
 
 describe("Telefonnummer", () => {
@@ -47,5 +48,22 @@ describe("Messenger-Links", () => {
     expect(normalizeTelegramUsername("abc")).toBeNull();
     expect(normalizeTelegramUsername("1lara")).toBeNull();
     expect(normalizeTelegramUsername("lara berlin")).toBeNull();
+  });
+});
+
+describe("Preise", () => {
+  it("ordnet alte Bezeichnungen den festen Positionen zu und sortiert nach Vorgabe", () => {
+    const rows = parsePrices([
+      { label: "Übernachtung", incallCents: 150000, outcallCents: null },
+      { label: "1 Stunde", incallCents: 25000, outcallCents: 30000 },
+      { label: "Eigene Position", incallCents: 1000, outcallCents: null },
+      { label: "2 Std", amountCents: 45000 },
+      { label: "3 Std", incallCents: null, outcallCents: null },
+    ]);
+    expect(rows).toEqual([
+      { label: "60 min", incallCents: 25000, outcallCents: 30000 },
+      { label: "2 Std", incallCents: 45000, outcallCents: 45000 },
+      { label: "Over-Night", incallCents: 150000, outcallCents: null },
+    ]);
   });
 });

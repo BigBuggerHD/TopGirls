@@ -23,7 +23,7 @@ import { PERSON_CATEGORIES, requiresModelConsent } from "@/lib/model-consent";
 import { WEEKDAYS } from "@/lib/labels";
 import { MEETING_FILTER_KEY, OUTCALL_VALUE } from "@/lib/meeting";
 import type { FilterSection } from "@/lib/filter-sections";
-import { MAX_PRICE_ROWS, type PriceRow } from "@/lib/prices";
+import { PRICE_DURATIONS, type PriceRow } from "@/lib/prices";
 import type { Availability } from "@/lib/availability";
 import {
   parseEuroToCents,
@@ -125,7 +125,7 @@ export async function saveDescriptionAction(_: ActionState, fd: FormData): Promi
     where: { id: p.id },
     data: { description, headline, ...(changed ? reviewIfPublished(p.status) : {}) },
   });
-  return done(p.id, 4, fd);
+  return done(p.id, 5, fd);
 }
 
 /** Schritt 2 „Kontaktdaten“: Telefonnummer, Messenger, Adresse. */
@@ -217,7 +217,7 @@ export async function verifyPhoneCodeAction(profileId: string, rawCode: string):
   return { ok: true, verified: true, phone: v.phone, message: "Telefonnummer verifiziert." };
 }
 
-/** Schritt 6 „Zeiten & Preise“. */
+/** Schritt 4 „Verfügbarkeit & Preise“. */
 export async function saveTimesPricesAction(_: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser();
   const p = await ownedProfile(String(fd.get("profileId")), user);
@@ -240,23 +240,17 @@ export async function saveTimesPricesAction(_: ActionState, fd: FormData): Promi
       priceNote: String(fd.get("priceNote") ?? "").trim().slice(0, 300) || null,
     },
   });
-  return done(p.id, 6, fd);
+  return done(p.id, 4, fd);
 }
 
-/** Liest die Preiszeilen (price_label_N, price_in_N, price_out_N). Zeilen ohne Bezeichnung werden ignoriert. */
+/** Liest die festen Preispositionen (price_in_N, price_out_N; N = Index in PRICE_DURATIONS). Positionen ohne Preis entfallen. */
 function readPrices(fd: FormData): PriceRow[] {
-  const rows: PriceRow[] = [];
   const amount = (name: string) => {
     const c = parseEuroToCents(String(fd.get(name) ?? "").trim());
     return c != null && c >= 0 && c <= 10_000_000 ? c : null;
   };
-  for (let i = 0; i < MAX_PRICE_ROWS; i++) {
-    const label = String(fd.get(`price_label_${i}`) ?? "").trim().slice(0, 60);
-    const incallCents = amount(`price_in_${i}`);
-    const outcallCents = amount(`price_out_${i}`);
-    if (label) rows.push({ label, incallCents, outcallCents }); // ohne Preis → „nach Absprache“
-  }
-  return rows;
+  return PRICE_DURATIONS.map((label, i) => ({ label, incallCents: amount(`price_in_${i}`), outcallCents: amount(`price_out_${i}`) }))
+    .filter((r) => r.incallCents != null || r.outcallCents != null);
 }
 
 /**

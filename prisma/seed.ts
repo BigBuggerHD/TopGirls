@@ -263,10 +263,11 @@ const CITIES = [["Berlin", "10115", "Berlin"], ["Hamburg", "20095", "Hamburg"], 
     }
     const prices = isWoman
       ? [
-          { label: "1 Stunde", incallCents: 25000 + (i % 3) * 5000, outcallCents: 30000 + (i % 3) * 5000 },
-          { label: "2 Stunden", incallCents: 45000 + (i % 3) * 8000, outcallCents: 52000 + (i % 3) * 8000 },
-          { label: "3 Stunden", incallCents: 65000, outcallCents: 75000 },
-          { label: "Übernachtung", incallCents: 150000, outcallCents: 170000 },
+          { label: "30 min", incallCents: 15000, outcallCents: null },
+          { label: "60 min", incallCents: 25000 + (i % 3) * 5000, outcallCents: 30000 + (i % 3) * 5000 },
+          { label: "2 Std", incallCents: 45000 + (i % 3) * 8000, outcallCents: 52000 + (i % 3) * 8000 },
+          { label: "3 Std", incallCents: 65000, outcallCents: 75000 },
+          { label: "Over-Night", incallCents: 150000, outcallCents: 170000 },
         ]
       : null;
     const created = await db.profile.create({

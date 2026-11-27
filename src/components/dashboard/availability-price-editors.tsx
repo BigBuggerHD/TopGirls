@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox, Input } from "@/components/ui/input";
 import { WEEKDAYS } from "@/lib/labels";
 import { dayMode, type Availability, type DayMode } from "@/lib/availability";
-import { centsToInput, MAX_PRICE_ROWS, type PriceRow } from "@/lib/prices";
+import { centsToInput, PRICE_DURATIONS, type PriceRow } from "@/lib/prices";
 import { cn } from "@/lib/utils";
 
 type DayState = { active: boolean; mode: DayMode; from: string; to: string };
@@ -65,44 +65,67 @@ export function AvailabilityEditor({ initial }: { initial: Availability }) {
   );
 }
 
-type RowState = { label: string; inc: string; out: string };
+type Side = "inc" | "out";
 
-/** Preisliste mit Übernahme Incall ↔ Outcall und „Preise nach Absprache“. Leere Preise erscheinen als „nach Absprache“. */
-export function PriceEditor({ initial }: { initial: PriceRow[] }) {
-  const [rows, setRows] = useState<RowState[]>(() =>
-    Array.from({ length: MAX_PRICE_ROWS }, (_, i) => ({ label: initial[i]?.label ?? "", inc: centsToInput(initial[i]?.incallCents), out: centsToInput(initial[i]?.outcallCents) })),
-  );
-  const set = (i: number, patch: Partial<RowState>) => setRows((all) => all.map((r, j) => (j === i ? { ...r, ...patch } : r)));
-  const copy = (dir: "in2out" | "out2in") => setRows((all) => all.map((r) => (dir === "in2out" ? { ...r, out: r.inc || r.out } : { ...r, inc: r.out || r.inc })));
+/**
+ * Preise: zwei Tabellen nebeneinander (Incall / Outcall) mit den festen Positionen der Vorgabe.
+ * Was in Schritt 3 „Service“ nicht gewählt ist, wird ausgegraut (Werte bleiben erhalten).
+ */
+export function PriceEditor({ initial, incall, outcall, outcallPlace, serviceHref }: { initial: PriceRow[]; incall: boolean; outcall: boolean; outcallPlace?: string | null; serviceHref: string }) {
+  const start = (side: Side) =>
+    PRICE_DURATIONS.map((d) => {
+      const r = initial.find((x) => x.label === d);
+      return centsToInput(side === "inc" ? r?.incallCents : r?.outcallCents);
+    });
+  const [values, setValues] = useState<Record<Side, string[]>>(() => ({ inc: start("inc"), out: start("out") }));
+  const enabled: Record<Side, boolean> = { inc: incall, out: outcall };
+  const set = (side: Side, i: number, v: string) => setValues((all) => ({ ...all, [side]: all[side].map((x, j) => (j === i ? v : x)) }));
+  const copyFrom = (from: Side, to: Side) => setValues((all) => ({ ...all, [to]: all[to].map((x, i) => all[from][i] || x) }));
 
-  const euro = (i: number, field: "inc" | "out", label: string) => (
-    <div className="relative">
-      <Input name={`price_${field === "inc" ? "in" : "out"}_${i}`} value={rows[i][field]} onChange={(e) => set(i, { [field]: e.target.value })} inputMode="decimal" placeholder={label} aria-label={`Preis ${i + 1} – ${label} in Euro`} className="pr-8" />
-      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-subtle">€</span>
-    </div>
-  );
-
-  return (
-    <fieldset className="space-y-2">
-      <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-        <legend className="text-sm font-medium">Preise</legend>
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={() => copy("in2out")} title="Incall-Preise in die Outcall-Spalte übernehmen"><ArrowRight /> Incall → Outcall übernehmen</Button>
-          <Button type="button" variant="outline" size="sm" onClick={() => copy("out2in")} title="Outcall-Preise in die Incall-Spalte übernehmen"><ArrowLeft /> Outcall → Incall übernehmen</Button>
-          <Button type="button" variant="outline" size="sm" onClick={() => setRows((all) => all.map((r) => ({ ...r, inc: "", out: "" })))}><Ban /> Preise nach Absprache</Button>
+  const table = (side: Side) => {
+    const on = enabled[side];
+    const other: Side = side === "inc" ? "out" : "inc";
+    const title = side === "inc" ? "Incall" : `Outcall${outcallPlace ? ` (${outcallPlace})` : ""}`;
+    return (
+      <div className={cn("rounded-xl border border-border bg-surface-2 p-4 transition-opacity sm:p-5", !on && "opacity-45")} aria-disabled={!on}>
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h4 className="font-display text-lg text-white">{title}</h4>
+          {on && enabled[other] ? (
+            <button type="button" onClick={() => copyFrom(other, side)}
+              className="flex shrink-0 items-center gap-1 rounded-full border border-border px-3 py-1 text-xs text-muted transition-colors hover:border-gold/60 hover:text-gold">
+              {side === "inc" ? <ArrowLeft className="size-3" /> : <ArrowRight className="size-3" />} Von {side === "inc" ? "Outcall" : "Incall"} übernehmen
+            </button>
+          ) : !on ? (
+            <p className="text-right text-xs text-subtle">In Schritt 3 nicht ausgewählt · <a href={serviceHref} className="text-gold underline">Ändern</a></p>
+          ) : null}
+        </div>
+        <div className="divide-y divide-border">
+          {PRICE_DURATIONS.map((d, i) => (
+            <div key={d} className="flex items-center justify-between gap-3 py-1.5">
+              <span className={cn("text-sm", values[side][i] ? "text-foreground" : "text-muted")}>{d}</span>
+              <div className="relative w-32">
+                <Input name={`price_${side === "inc" ? "in" : "out"}_${i}`} value={values[side][i]} onChange={(e) => set(side, i, e.target.value)} readOnly={!on} tabIndex={on ? undefined : -1}
+                  inputMode="decimal" placeholder="–" aria-label={`${side === "inc" ? "Incall" : "Outcall"} ${d} in Euro`} className="h-9 pr-8 text-right" />
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-subtle">€</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
-      <p className="text-xs text-subtle">
-        Bis zu {MAX_PRICE_ROWS} Positionen, z. B. „1 Stunde“. Leere Preisfelder erscheinen als „nach Absprache“. Angezeigt wird nur Incall bzw. Outcall, je nachdem, was du unter „Treffpunkt“ (Schritt 1 „Profildaten“) gewählt hast.
-      </p>
-      <div className="hidden grid-cols-[1fr_130px_130px] gap-3 text-xs text-subtle sm:grid"><span>Bezeichnung</span><span>Incall</span><span>Outcall</span></div>
-      {rows.map((r, i) => (
-        <div key={i} className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_130px_130px]">
-          <Input name={`price_label_${i}`} value={r.label} onChange={(e) => set(i, { label: e.target.value })} placeholder={i === 0 ? "z. B. 1 Stunde" : ""} maxLength={60} aria-label={`Preis ${i + 1} – Bezeichnung`} className="col-span-2 sm:col-span-1" />
-          {euro(i, "inc", "Incall")}
-          {euro(i, "out", "Outcall")}
-        </div>
-      ))}
+    );
+  };
+
+  return (
+    <fieldset className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <legend className="font-display text-xl text-white">Preise</legend>
+        <Button type="button" variant="outline" size="sm" onClick={() => setValues({ inc: PRICE_DURATIONS.map(() => ""), out: PRICE_DURATIONS.map(() => "") })}><Ban /> Preise nach Absprache</Button>
+      </div>
+      <p className="text-xs text-subtle">Trage nur die Preise ein, die du anbietest – leere Felder erscheinen nicht auf deiner Sedcard. Ohne Preise steht dort „Preise nach Absprache“.</p>
+      <div className="grid gap-4 md:grid-cols-2">
+        {table("inc")}
+        {table("out")}
+      </div>
     </fieldset>
   );
 }

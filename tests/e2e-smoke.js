@@ -75,9 +75,11 @@ require("node:fs").mkdirSync(out, { recursive: true });
     await page.getByRole("checkbox", { name: "Männer", exact: true }).check();
     await page.getByRole("button", { name: "Speichern & weiter" }).click();
     await page.waitForURL(/schritt=4/);
-    await page.fill("#description", "Dies ist eine ausführliche Testbeschreibung für die Sedcard, die mindestens achtzig Zeichen lang sein muss, damit sie gültig ist.");
     await page.getByRole("button", { name: "Speichern & weiter" }).click();
     await page.waitForURL(/schritt=5/);
+    await page.fill("#description", "Dies ist eine ausführliche Testbeschreibung für die Sedcard, die mindestens achtzig Zeichen lang sein muss, damit sie gültig ist.");
+    await page.getByRole("button", { name: "Speichern & weiter" }).click();
+    await page.waitForURL(/schritt=6/);
     await page.screenshot({ path: `${out}/07-wizard.png` });
   });
   await step("Sedcard ohne Nachrichtenfunktion", async () => {

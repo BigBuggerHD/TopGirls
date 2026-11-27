@@ -86,7 +86,7 @@ export async function reviewImageAction(fd: FormData) {
     // "ban" = Hash-Sperre: Bild kann nirgends erneut hochgeladen werden (z. B. nicht einvernehmliche Aufnahmen)
     await db.profileImage.update({ where: { id }, data: { status: "REJECTED", rejectReason: decision === "ban" ? `[SPERRE] ${reason}` : reason } });
     if (decision === "ban") await db.profileImage.updateMany({ where: { sha256: img.sha256, id: { not: id } }, data: { status: "REJECTED", rejectReason: `[SPERRE] ${reason}` } });
-    await notify(img.profile.ownerId, "Bild abgelehnt", `Ein Bild deiner Sedcard „${img.profile.stageName}“ wurde abgelehnt: ${reason}`, `/dashboard/sedcards/${img.profileId}?schritt=5`);
+    await notify(img.profile.ownerId, "Bild abgelehnt", `Ein Bild deiner Sedcard „${img.profile.stageName}“ wurde abgelehnt: ${reason}`, `/dashboard/sedcards/${img.profileId}?schritt=6`);
   }
   await audit(mod.id, `image.${decision}`, { type: "ProfileImage", id }, { reason });
   revalidatePath("/admin/bilder");

@@ -9,6 +9,7 @@ import { PROFILE_STATUS, VERIFICATION_STATUS } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { parsePrices } from "@/lib/prices";
 import type { Availability } from "@/lib/availability";
+import { meetingTypes, OUTCALL_PLACE_KEY } from "@/lib/meeting";
 import { deleteImageAction, deleteProfileAction, getPublishChecklist, pauseProfileAction, setCoverImageAction } from "@/actions/profiles";
 import { ContactDataStep, ProfileDataStep, ServiceStep, DescriptionStep, ImagesStep, TimesPricesStep, ModelConsentUpload, SubmitStep } from "@/components/dashboard/sedcard-steps";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +19,7 @@ import { Gallery } from "@/components/profiles/gallery";
 
 export const metadata = { title: "Sedcard bearbeiten" };
 
-const STEPS = ["Profildaten", "Kontaktdaten", "Service", "Beschreibung", "Bilder", "Zeiten & Preise", "Vorschau & Veröffentlichung"];
+const STEPS = ["Profildaten", "Kontaktdaten", "Service", "Verfügbarkeit & Preise", "Beschreibung", "Bilder", "Vorschau & Veröffentlichung"];
 
 export default async function EditSedcardPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ schritt?: string }> }) {
   const user = await requirePermission("profile.own");
@@ -29,7 +30,7 @@ export default async function EditSedcardPage({ params, searchParams }: { params
     include: {
       category: true,
       images: { orderBy: [{ isCover: "desc" }, { sortOrder: "asc" }] },
-      attributes: { include: { options: true } },
+      attributes: { include: { filter: { select: { key: true } }, options: { include: { option: { select: { value: true, label: true } } } } } },
     },
   });
   if (!p) notFound();
@@ -102,8 +103,8 @@ export default async function EditSedcardPage({ params, searchParams }: { params
           />
         )}
         {step === 3 && <ServiceStep profileId={p.id} filters={filterProps} values={valueProps} />}
-        {step === 4 && <DescriptionStep profile={p} />}
-        {step === 5 && (
+        {step === 5 && <DescriptionStep profile={p} />}
+        {step === 6 && (
           <ImagesStep
             profileId={p.id}
             images={p.images.map((i) => ({ id: i.id, thumb: mediaUrl(i.thumbKey)!, status: i.status, isCover: i.isCover, rejectReason: i.rejectReason }))}
@@ -111,7 +112,12 @@ export default async function EditSedcardPage({ params, searchParams }: { params
             onCover={setCoverImageAction}
           />
         )}
-        {step === 6 && <TimesPricesStep profile={{ id: p.id, availability: (p.availability ?? {}) as Availability, prices: parsePrices(p.prices), priceNote: p.priceNote }} />}
+        {step === 4 && (
+          <TimesPricesStep
+            profile={{ id: p.id, availability: (p.availability ?? {}) as Availability, prices: parsePrices(p.prices), priceNote: p.priceNote }}
+            meeting={{ ...meetingTypes(p), outcallPlace: p.attributes.find((a) => a.filter.key === OUTCALL_PLACE_KEY)?.options[0]?.option.label ?? null }}
+          />
+        )}
         {step === 7 && checklist && (
           <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
             <div>

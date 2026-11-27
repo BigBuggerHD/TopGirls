@@ -11,7 +11,7 @@ import { mediaUrl } from "@/lib/media";
 import { WEEKDAYS } from "@/lib/labels";
 import { formatDate, formatEuro } from "@/lib/format";
 import { parsePrices } from "@/lib/prices";
-import { BY_ARRANGEMENT, dayLabel, dayMode, hasAnyAvailability, type Availability } from "@/lib/availability";
+import { dayLabel, dayMode, hasAnyAvailability, type Availability } from "@/lib/availability";
 import { Gallery } from "@/components/profiles/gallery";
 import { ContactReveal } from "@/components/profiles/contact-reveal";
 import { publicLocation } from "@/lib/districts";
@@ -220,8 +220,8 @@ export default async function ProfilePage({ params }: Params) {
                 {prices.map((r, i) => (
                   <tr key={i} className="border-b border-border">
                     <td className="py-2 text-foreground/90">{r.label}</td>
-                    <td className={`py-2 text-right ${showIncall && r.incallCents != null ? "text-foreground" : "text-subtle"}`}>{!showIncall ? "–" : r.incallCents != null ? formatEuro(r.incallCents) : BY_ARRANGEMENT}</td>
-                    <td className={`py-2 text-right ${showOutcall && r.outcallCents != null ? "text-foreground" : "text-subtle"}`}>{!showOutcall ? "–" : r.outcallCents != null ? formatEuro(r.outcallCents) : BY_ARRANGEMENT}</td>
+                    <td className={`py-2 text-right ${showIncall && r.incallCents != null ? "text-foreground" : "text-subtle"}`}>{showIncall && r.incallCents != null ? formatEuro(r.incallCents) : "–"}</td>
+                    <td className={`py-2 text-right ${showOutcall && r.outcallCents != null ? "text-foreground" : "text-subtle"}`}>{showOutcall && r.outcallCents != null ? formatEuro(r.outcallCents) : "–"}</td>
                   </tr>
                 ))}
               </tbody>

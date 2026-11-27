@@ -498,14 +498,14 @@ export function ServiceStep({ profileId, filters, values }: { profileId: string;
 }
 
 type Avail = Availability;
-/** Schritt 6 „Zeiten & Preise“. */
-export function TimesPricesStep({ profile }: { profile: { id: string; availability: Avail; prices: PriceRow[]; priceNote: string | null } }) {
+/** Schritt 4 „Verfügbarkeit & Preise“. */
+export function TimesPricesStep({ profile, meeting }: { profile: { id: string; availability: Avail; prices: PriceRow[]; priceNote: string | null }; meeting: { incall: boolean; outcall: boolean; outcallPlace: string | null } }) {
   return (
     <StepForm action={saveTimesPricesAction} profileId={profile.id}>
       {() => (
         <>
           <AvailabilityEditor initial={profile.availability} />
-          <PriceEditor initial={profile.prices} />
+          <PriceEditor initial={profile.prices} incall={meeting.incall} outcall={meeting.outcall} outcallPlace={meeting.outcallPlace} serviceHref="?schritt=3" />
           <Field label="Hinweis zu den Preisen" name="priceNote">
             <Input id="priceNote" name="priceNote" defaultValue={profile.priceNote ?? ""} maxLength={300} placeholder="z. B. Preise sind Richtwerte, Details nach Absprache" />
           </Field>
