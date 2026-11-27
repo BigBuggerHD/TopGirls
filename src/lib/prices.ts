@@ -16,7 +16,7 @@ export function parsePrices(value: unknown): PriceRow[] {
     const o = r as { label: string; incallCents?: unknown; outcallCents?: unknown; amountCents?: unknown };
     const legacy = cents(o.amountCents);
     const row = { label: o.label, incallCents: cents(o.incallCents) ?? legacy, outcallCents: cents(o.outcallCents) ?? legacy };
-    if (row.incallCents != null || row.outcallCents != null) rows.push(row);
+    if (row.label.trim()) rows.push(row); // Zeilen ohne Preis erscheinen als „nach Absprache“
   }
   return rows.slice(0, MAX_PRICE_ROWS);
 }

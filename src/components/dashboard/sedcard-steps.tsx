@@ -9,7 +9,9 @@ import { Field, FormMessage, SubmitButton } from "@/components/ui/form";
 import { Checkbox, Input, Select, Textarea } from "@/components/ui/input";
 import { WEEKDAYS } from "@/lib/labels";
 import type { ActionState } from "@/lib/validation";
-import { centsToInput, type PriceRow } from "@/lib/prices";
+import type { PriceRow } from "@/lib/prices";
+import type { Availability } from "@/lib/availability";
+import { AvailabilityEditor, PriceEditor } from "./availability-price-editors";
 
 type Action = (s: ActionState, fd: FormData) => Promise<ActionState>;
 
@@ -200,7 +202,7 @@ export function LocationStep({ profile }: { profile: { id: string; city: string;
   );
 }
 
-type Avail = Record<string, { active?: boolean; from?: string; to?: string }>;
+type Avail = Availability;
 export function ContactStep({ profile }: { profile: { id: string; contactPhone: string | null; contactWhatsapp: string | null; contactEmail: string | null; contactWebsite: string | null; showPhone: boolean; allowMessages: boolean; availabilityNote: string | null; availability: Avail; prices: PriceRow[]; priceNote: string | null } }) {
   return (
     <StepForm action={saveContactAction} profileId={profile.id}>
@@ -216,41 +218,8 @@ export function ContactStep({ profile }: { profile: { id: string; contactPhone: 
             <label className="flex items-center gap-2"><Checkbox name="showPhone" defaultChecked={profile.showPhone} /> Telefon/WhatsApp öffentlich anzeigen</label>
             <label className="flex items-center gap-2"><Checkbox name="allowMessages" defaultChecked={profile.allowMessages} /> Nachrichten über Top Girls erlauben</label>
           </div>
-          <fieldset className="space-y-2">
-            <legend className="mb-2 text-sm font-medium">Verfügbarkeit</legend>
-            {WEEKDAYS.map(([k, label]) => {
-              const a = profile.availability[k] ?? {};
-              return (
-                <div key={k} className="grid grid-cols-[110px_auto_1fr_1fr] items-center gap-3 rounded-md bg-background-alt px-3 py-2 text-sm">
-                  <span>{label}</span>
-                  <Checkbox name={`av_${k}_active`} defaultChecked={!!a.active} aria-label={`${label} verfügbar`} />
-                  <Input type="time" name={`av_${k}_from`} defaultValue={a.from ?? "10:00"} aria-label={`${label} von`} className="h-9" />
-                  <Input type="time" name={`av_${k}_to`} defaultValue={a.to ?? "20:00"} aria-label={`${label} bis`} className="h-9" />
-                </div>
-              );
-            })}
-          </fieldset>
-          <fieldset className="space-y-2">
-            <legend className="mb-1 text-sm font-medium">Preise</legend>
-            <p className="text-xs text-subtle">Bis zu 8 Positionen, z. B. „1 Stunde“. Trage den Preis für Incall (bei dir) und/oder Outcall (Haus-/Hotelbesuch) ein. Angezeigt wird nur, was du unter „Treffpunkt“ (Schritt 4) gewählt hast.</p>
-            <div className="hidden grid-cols-[1fr_130px_130px] gap-3 text-xs text-subtle sm:grid"><span>Bezeichnung</span><span>Incall</span><span>Outcall</span></div>
-            {Array.from({ length: 8 }, (_, i) => {
-              const r = profile.prices[i];
-              const euro = (name: string, value: number | null | undefined, label: string) => (
-                <div className="relative">
-                  <Input name={name} defaultValue={centsToInput(value)} inputMode="decimal" placeholder={label} aria-label={`Preis ${i + 1} – ${label} in Euro`} className="pr-8" />
-                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-subtle">€</span>
-                </div>
-              );
-              return (
-                <div key={i} className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_130px_130px]">
-                  <Input name={`price_label_${i}`} defaultValue={r?.label ?? ""} placeholder={i === 0 ? "z. B. 1 Stunde" : ""} maxLength={60} aria-label={`Preis ${i + 1} – Bezeichnung`} className="col-span-2 sm:col-span-1" />
-                  {euro(`price_in_${i}`, r?.incallCents, "Incall")}
-                  {euro(`price_out_${i}`, r?.outcallCents, "Outcall")}
-                </div>
-              );
-            })}
-          </fieldset>
+          <AvailabilityEditor initial={profile.availability} />
+          <PriceEditor initial={profile.prices} />
           <Field label="Hinweis zu den Preisen" name="priceNote">
             <Input id="priceNote" name="priceNote" defaultValue={profile.priceNote ?? ""} maxLength={300} placeholder="z. B. Preise sind Richtwerte, Details nach Absprache" />
           </Field>

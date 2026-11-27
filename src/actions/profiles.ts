@@ -16,6 +16,7 @@ import { audit } from "@/lib/audit";
 import { PERSON_CATEGORIES, requiresModelConsent } from "@/lib/model-consent";
 import { WEEKDAYS } from "@/lib/labels";
 import { MAX_PRICE_ROWS, type PriceRow } from "@/lib/prices";
+import type { Availability } from "@/lib/availability";
 import {
   parseEuroToCents,
   profileBasicsSchema, profileContactSchema, profileDescriptionSchema, profileLocationSchema, zodErrors, type ActionState,
@@ -117,12 +118,14 @@ export async function saveContactAction(_: ActionState, fd: FormData): Promise<A
   if (!parsed.success) return zodErrors(parsed.error);
   const d = parsed.data;
   const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
-  const availability: Record<string, { active: boolean; from?: string; to?: string }> = {};
+  const availability: Availability = {};
   for (const [k] of WEEKDAYS) {
-    const active = fd.get(`av_${k}_active`) === "on";
+    const mode = String(fd.get(`av_${k}_mode`) ?? "none");
     const from = String(fd.get(`av_${k}_from`) ?? "");
     const to = String(fd.get(`av_${k}_to`) ?? "");
-    availability[k] = active && timeRe.test(from) && timeRe.test(to) ? { active, from, to } : { active: false };
+    if (mode === "allday" || mode === "arrange") availability[k] = { active: true, mode };
+    else if (mode === "time" && timeRe.test(from) && timeRe.test(to)) availability[k] = { active: true, mode: "time", from, to };
+    else availability[k] = { active: false }; // erscheint als „nach Absprache“
   }
   await db.profile.update({
     where: { id: p.id },
@@ -137,7 +140,7 @@ export async function saveContactAction(_: ActionState, fd: FormData): Promise<A
   return done(p.id, 6, fd);
 }
 
-/** Liest die Preiszeilen (price_label_N, price_in_N, price_out_N). Zeilen ohne Bezeichnung oder ohne Preis werden ignoriert. */
+/** Liest die Preiszeilen (price_label_N, price_in_N, price_out_N). Zeilen ohne Bezeichnung werden ignoriert. */
 function readPrices(fd: FormData): PriceRow[] {
   const rows: PriceRow[] = [];
   const amount = (name: string) => {
@@ -148,7 +151,7 @@ function readPrices(fd: FormData): PriceRow[] {
     const label = String(fd.get(`price_label_${i}`) ?? "").trim().slice(0, 60);
     const incallCents = amount(`price_in_${i}`);
     const outcallCents = amount(`price_out_${i}`);
-    if (label && (incallCents != null || outcallCents != null)) rows.push({ label, incallCents, outcallCents });
+    if (label) rows.push({ label, incallCents, outcallCents }); // ohne Preis → „nach Absprache“
   }
   return rows;
 }

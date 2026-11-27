@@ -11,6 +11,7 @@ import { mediaUrl } from "@/lib/media";
 import { WEEKDAYS } from "@/lib/labels";
 import { formatDate, formatEuro } from "@/lib/format";
 import { parsePrices } from "@/lib/prices";
+import { BY_ARRANGEMENT, dayLabel, dayMode, hasAnyAvailability, type Availability } from "@/lib/availability";
 import { Gallery } from "@/components/profiles/gallery";
 import { ContactReveal } from "@/components/profiles/contact-reveal";
 import { ReportDialog } from "@/components/report/report-dialog";
@@ -73,8 +74,8 @@ export default async function ProfilePage({ params }: Params) {
   const showIncall = meeting.incall || noMeetingChoice;
   const showOutcall = meeting.outcall || noMeetingChoice;
   const services = p.attributes.find((a) => a.filter.key === "leistungen" && a.filter.active)?.options.map((o) => o.option.label) ?? [];
-  const availability = (p.availability ?? {}) as Record<string, { active?: boolean; from?: string; to?: string }>;
-  const hasAvailability = WEEKDAYS.some(([k]) => availability[k]?.active);
+  const availability = (p.availability ?? {}) as Availability;
+  const hasAvailability = hasAnyAvailability(availability);
 
   return (
     <div className="container-page py-10">
@@ -155,27 +156,30 @@ export default async function ProfilePage({ params }: Params) {
         </div>
         {/* Zeile 2 links: Verfügbarkeit (unter den Bildern) */}
         <div>
-          {hasAvailability ? (
-            <section>
-              <h2 className="mb-3 flex items-center gap-2 font-display text-2xl text-white"><Clock className="size-5 text-gold" /> Verfügbarkeit</h2>
-              {hasAvailability ? (
-                <ul className="grid gap-1.5 text-sm sm:grid-cols-2">
-                  {WEEKDAYS.map(([k, label]) => (
+          <section>
+            <h2 className="mb-3 flex items-center gap-2 font-display text-2xl text-white"><Clock className="size-5 text-gold" /> Verfügbarkeit</h2>
+            {hasAvailability ? (
+              <ul className="grid gap-1.5 text-sm sm:grid-cols-2">
+                {WEEKDAYS.map(([k, label]) => {
+                  const fixed = dayMode(availability[k]) !== null;
+                  return (
                     <li key={k} className="flex justify-between gap-3 rounded-md bg-surface px-3 py-2">
                       <span className="text-muted">{label}</span>
-                      <span className={`whitespace-nowrap ${availability[k]?.active ? "text-foreground" : "text-subtle"}`}>{availability[k]?.active ? `${availability[k]?.from ?? ""} – ${availability[k]?.to ?? ""} Uhr` : "–"}</span>
+                      <span className={`whitespace-nowrap ${fixed ? "text-foreground" : "text-subtle"}`}>{dayLabel(availability[k])}</span>
                     </li>
-                  ))}
-                </ul>
-              ) : null}
-            </section>
-          ) : null}
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted">Verfügbarkeit nach Absprache.</p>
+            )}
+          </section>
         </div>
         {/* Zeile 2 rechts: Preise – auf Höhe der Verfügbarkeit, gleiche Breite wie die Eigenschaften-Tabelle */}
         <div className="grid gap-8 xl:grid-cols-[1fr_280px]">
         <section>
           <h2 className="mb-3 font-display text-2xl text-white">Preise</h2>
-          {prices.length ? (
+          {prices.some((r) => r.incallCents != null || r.outcallCents != null) ? (
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-subtle">
@@ -188,14 +192,14 @@ export default async function ProfilePage({ params }: Params) {
                 {prices.map((r, i) => (
                   <tr key={i} className="border-b border-border">
                     <td className="py-2 text-foreground/90">{r.label}</td>
-                    <td className={`py-2 text-right ${showIncall && r.incallCents != null ? "text-foreground" : "text-subtle"}`}>{showIncall && r.incallCents != null ? formatEuro(r.incallCents) : "–"}</td>
-                    <td className={`py-2 text-right ${showOutcall && r.outcallCents != null ? "text-foreground" : "text-subtle"}`}>{showOutcall && r.outcallCents != null ? formatEuro(r.outcallCents) : "–"}</td>
+                    <td className={`py-2 text-right ${showIncall && r.incallCents != null ? "text-foreground" : "text-subtle"}`}>{!showIncall ? "–" : r.incallCents != null ? formatEuro(r.incallCents) : BY_ARRANGEMENT}</td>
+                    <td className={`py-2 text-right ${showOutcall && r.outcallCents != null ? "text-foreground" : "text-subtle"}`}>{!showOutcall ? "–" : r.outcallCents != null ? formatEuro(r.outcallCents) : BY_ARRANGEMENT}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           ) : (
-            <p className="text-sm text-subtle">Preise auf Anfrage.</p>
+            <p className="text-sm text-muted">Preise nach Absprache.</p>
           )}
           {p.priceNote ? <p className="mt-2 text-xs text-muted">{p.priceNote}</p> : null}
         </section>
