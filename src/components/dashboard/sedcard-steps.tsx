@@ -302,7 +302,7 @@ export function ImagesStep({ profileId, images, onDelete, onCover, maxImages, ne
       <div className="space-y-5 border-t border-border pt-6">
         <label className="flex items-start gap-3 rounded-lg border border-border bg-background-alt p-4 text-sm">
           <Checkbox checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5" />
-          <span>Ich bestätige, dass ich alle Rechte an den Bildern besitze, die abgebildete Person volljährig ist und der Veröffentlichung ausdrücklich und freiwillig zugestimmt hat. Pornografische Darstellungen sind nicht erlaubt.</span>
+          <span>Ich bestätige, dass ich alle Rechte an den Bildern besitze, die abgebildete Person volljährig ist und der Veröffentlichung ausdrücklich und freiwillig zugestimmt hat.</span>
         </label>
         <p className="text-xs text-subtle">Metadaten (z. B. GPS-Standort) werden automatisch entfernt. Neue Bilder werden vor der Veröffentlichung geprüft.</p>
         <div className="flex flex-wrap items-center gap-3">
