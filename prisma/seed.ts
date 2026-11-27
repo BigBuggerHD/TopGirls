@@ -167,7 +167,7 @@ async function main() {
     { key: "intimbereich", label: "Rasiert", type: "SELECT", cats: ["frauen"], options: [["rasiert", "Rasiert"], ["natuerlich", "Unrasiert"]], sort: 15, perPerson: true },
     { key: "raucher", label: "Raucher", type: "SELECT", cats: ["frauen"], options: o("Nein", "Gelegentlich", "Ja"), sort: 16, perPerson: true },
     // Service (Assistent Schritt 3) gemäß Vorgabe „Service“; Treffmöglichkeiten-Werte bleiben für die Incall/Outcall-Symbole gleich
-    { key: "treffpunkt", label: "Treffmöglichkeiten", type: "MULTISELECT", cats: ["frauen"], options: [["eigene-raeumlichkeiten", "Incall (bei mir)"], ["haus-hotelbesuche", "Outcall"]], sort: 20, section: "service" },
+    { key: "treffpunkt", label: "Treffmöglichkeiten", type: "MULTISELECT", cats: ["frauen"], options: [["eigene-raeumlichkeiten", "Incall"], ["haus-hotelbesuche", "Outcall"]], sort: 20, section: "service" },
     ...SERVICE_FILTERS.map((f): F => ({ key: f.key, label: f.label, type: f.type, cats: ["frauen"], options: f.options, sort: f.sort, showInSearch: f.showInSearch, section: "service" })),
     { key: "online_format", label: "Online-Format", type: "MULTISELECT", cats: ["online-inserate"], options: o("Videochat", "Textchat", "Telefon"), sort: 51 },
     { key: "massagearten", label: "Massagearten", type: "MULTISELECT", cats: ["massagen"], options: o("Klassisch", "Aromaöl", "Thai", "Hot Stone", "Tantra"), sort: 52 },

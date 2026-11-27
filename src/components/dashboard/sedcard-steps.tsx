@@ -365,16 +365,16 @@ export function ContactDataStep({ profile }: { profile: ContactDataProfile }) {
 }
 
 /** Häkchen im Pillen-Stil (für kurze Auswahllisten). */
-function CheckPill({ name, value, label, defaultChecked, onChange }: { name: string; value: string; label: string; defaultChecked?: boolean; onChange?: (v: boolean) => void }) {
+function CheckPill({ name, value, label, defaultChecked, checked, onChange, type = "checkbox" }: { name: string; value: string; label: string; defaultChecked?: boolean; checked?: boolean; onChange?: (v: boolean) => void; type?: "checkbox" | "radio" }) {
   return (
     <label className="flex cursor-pointer items-center gap-2 rounded-full border border-border px-3.5 py-2 text-sm text-muted transition-colors hover:border-border-strong has-[:checked]:border-gold/70 has-[:checked]:bg-gold/10 has-[:checked]:text-foreground">
-      <Checkbox name={name} value={value} defaultChecked={defaultChecked} onChange={onChange ? (e) => onChange(e.target.checked) : undefined} />
+      <Checkbox type={type} name={name} value={value} defaultChecked={defaultChecked} checked={checked} onChange={onChange ? (e) => onChange(e.target.checked) : undefined} />
       {label}
     </label>
   );
 }
 
-/** Ein Service-Abschnitt als Karte: Überschrift, Zähler, „Alle auswählen“ und alle Punkte als anklickbare Felder. */
+/** Ein Service-Abschnitt als Karte: Überschrift, „Alle auswählen“ und alle Punkte als anklickbare Felder. */
 function ServiceGroup({ name, label, options, initial }: { name: string; label: string; options: { id: string; label: string }[]; initial: string[] }) {
   const [selected, setSelected] = useState<string[]>(initial);
   const all = selected.length === options.length;
@@ -382,10 +382,7 @@ function ServiceGroup({ name, label, options, initial }: { name: string; label: 
   return (
     <section className="rounded-xl border border-border bg-surface-2 p-3 sm:p-5" aria-label={label}>
       <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="flex items-baseline gap-2">
-          <h4 className="font-display text-lg text-white">{label}</h4>
-          <span className={selected.length ? "text-xs text-gold" : "text-xs text-subtle"}>{selected.length}/{options.length}</span>
-        </div>
+        <h4 className="font-display text-lg text-white">{label}</h4>
         <button type="button" onClick={() => setSelected(all ? [] : options.map((o) => o.id))}
           className="shrink-0 rounded-full border border-border px-3 py-1 text-xs text-muted transition-colors hover:border-gold/60 hover:text-gold">
           {all ? "Alle abwählen" : "Alle auswählen"}
@@ -417,6 +414,7 @@ export function ServiceStep({ profileId, filters, values }: { profileId: string;
   const outcallOpt = meeting?.options.find((o) => o.value === OUTCALL_VALUE);
   const [outcall, setOutcall] = useState(!!meeting && !!outcallOpt && sel(meeting).includes(outcallOpt.id));
   const place = byKey(OUTCALL_PLACE_KEY);
+  const [placeId, setPlaceId] = useState(place ? sel(place)[0] ?? "" : "");
   const rest = filters.filter((f) => !SERVICE_TOP_KEYS.includes(f.key));
   const groups = rest.filter((f) => f.type === "MULTISELECT" || f.type === "SELECT");
   const flags = rest.filter((f) => f.type === "BOOLEAN");
@@ -443,17 +441,24 @@ export function ServiceStep({ profileId, filters, values }: { profileId: string;
               <fieldset>
                 <legend className="mb-2.5 text-sm font-medium text-foreground/90">{meeting.label}</legend>
                 <div className="flex flex-wrap items-center gap-2">
-                  {meeting.options.map((o) => (
-                    <CheckPill key={o.id} name={`attr_${meeting.key}`} value={o.id} label={o.label} defaultChecked={sel(meeting).includes(o.id)}
-                      onChange={o.id === outcallOpt?.id ? setOutcall : undefined} />
-                  ))}
-                  {outcall && place ? (
-                    <div className="w-44">
-                      <FancySelect name={`attr_${place.key}`} ariaLabel="Outcall-Ort" placeholder="Wo?" defaultValue={sel(place)[0] ?? ""}
-                        options={place.options.map((o) => ({ value: o.id, label: o.label }))} />
-                    </div>
-                  ) : null}
+                  {meeting.options.map((o) =>
+                    o.id === outcallOpt?.id ? (
+                      <CheckPill key={o.id} name={`attr_${meeting.key}`} value={o.id} label={o.label} checked={outcall}
+                        onChange={(v) => { setOutcall(v); if (!v) setPlaceId(""); }} />
+                    ) : (
+                      <CheckPill key={o.id} name={`attr_${meeting.key}`} value={o.id} label={o.label} defaultChecked={sel(meeting).includes(o.id)} />
+                    ),
+                  )}
                 </div>
+                {outcallOpt && place ? (
+                  <div className={cn("mt-3 flex flex-wrap items-center gap-2 transition-opacity", outcall ? "" : "opacity-60")} role="radiogroup" aria-label="Outcall: Hotel, Privat oder beides">
+                    <span className="mr-1 text-xs uppercase tracking-wider text-subtle">Outcall</span>
+                    {place.options.map((o) => (
+                      <CheckPill key={o.id} type="radio" name={`attr_${place.key}`} value={o.id} label={o.label} checked={placeId === o.id}
+                        onChange={(v) => { if (v) { setPlaceId(o.id); setOutcall(true); } }} />
+                    ))}
+                  </div>
+                ) : null}
               </fieldset>
             ) : null}
             {pills(byKey("auch_mit"))}

@@ -50,7 +50,7 @@ export const SERVICE_FILTERS: ServiceFilter[] = [
       ],
       [
         "privat-hotel",
-        "Privat/Hotel"
+        "Beides"
       ]
     ]
   },
