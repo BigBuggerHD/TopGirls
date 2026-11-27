@@ -72,7 +72,7 @@ require("node:fs").mkdirSync(out, { recursive: true });
     await page.fill("#city", "Berlin");
     await page.getByRole("button", { name: "Speichern & weiter" }).click();
     await page.waitForURL(/schritt=3/);
-    await page.locator('label:has-text("Männer") input').check();
+    await page.getByRole("checkbox", { name: "Männer", exact: true }).check();
     await page.getByRole("button", { name: "Speichern & weiter" }).click();
     await page.waitForURL(/schritt=4/);
     await page.fill("#description", "Dies ist eine ausführliche Testbeschreibung für die Sedcard, die mindestens achtzig Zeichen lang sein muss, damit sie gültig ist.");
