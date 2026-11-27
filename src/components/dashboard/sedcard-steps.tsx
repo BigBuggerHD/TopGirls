@@ -266,8 +266,45 @@ export function ContactDataStep({ profile }: { profile: ContactDataProfile }) {
     <StepForm action={saveContactDataAction} profileId={profile.id}>
       {(s) => (
         <div className="space-y-8">
+          {/* Adresse */}
+          <div className="space-y-5">
+            <h3 className="font-display text-xl text-white">Adresse</h3>
+            <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-4 sm:grid-cols-[minmax(0,1fr)_10rem] sm:gap-5">
+              <Field label="Straße" name="street" errors={s?.errors?.street}>
+                <Input id="street" name="street" autoComplete="address-line1" defaultValue={profile.street ?? ""} maxLength={80} />
+              </Field>
+              <Field label="Hausnr." name="houseNumber" errors={s?.errors?.houseNumber}>
+                <Input id="houseNumber" name="houseNumber" defaultValue={profile.houseNumber ?? ""} maxLength={10} />
+              </Field>
+            </div>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5">
+              <Field label="PLZ" name="postalCode" errors={s?.errors?.postalCode}>
+                <Input id="postalCode" name="postalCode" autoComplete="postal-code" defaultValue={profile.postalCode ?? ""} inputMode="numeric" maxLength={5} />
+              </Field>
+              <Field label="Stadt" name="city" errors={s?.errors?.city} required>
+                <Input id="city" name="city" autoComplete="address-level2" value={city} onChange={(e) => setCity(e.target.value)} maxLength={80} />
+              </Field>
+              <div className="col-span-2 sm:col-span-1">
+                <Field label="Bezirk" name="district" errors={s?.errors?.district}>
+                  {districts ? (
+                    <FancySelect key={`d-${city.trim().toLowerCase()}`} name="district" ariaLabel="Bezirk" placeholder="Bezirk wählen" defaultValue={districts.includes(district) ? district : ""}
+                      onChange={setDistrict} options={districts.map((d) => ({ value: d, label: d }))} />
+                  ) : (
+                    <Input id="district" name="district" value={district} onChange={(e) => setDistrict(e.target.value)} maxLength={80} />
+                  )}
+                </Field>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Switch id="showAddress" name="showAddress" checked={showAddress} onChange={setShowAddress} label="Adresse anzeigen" />
+              <label htmlFor="showAddress" className="text-sm font-medium text-foreground">Adresse anzeigen: <span className={showAddress ? "text-gold" : "text-muted"}>{showAddress ? "Ja" : "Nein"}</span></label>
+            </div>
+            <p className="text-xs text-subtle">
+              {showAddress ? "Straße, Hausnummer, PLZ, Stadt und Bezirk sind auf deiner Sedcard sichtbar." : "Öffentlich sind nur Bezirk und Stadt sichtbar – Straße und Hausnummer bleiben verborgen."}
+            </p>
+          </div>
           {/* Telefonnummer */}
-          <div className="space-y-3">
+          <div className="space-y-3 border-t border-border pt-6">
             <Field label="Telefonnummer" name="contactPhone" errors={s?.errors?.contactPhone} required hint="Wird per SMS-Code bestätigt. Pflicht für die Veröffentlichung.">
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Input id="contactPhone" name="contactPhone" type="tel" autoComplete="tel" placeholder="z. B. 0151 1234567" value={phone}
@@ -306,43 +343,6 @@ export function ContactDataStep({ profile }: { profile: ContactDataProfile }) {
             <p className="text-xs text-subtle">Erreichbar über deine oben angegebene Telefonnummer.</p>
           </div>
 
-          {/* Adresse */}
-          <div className="space-y-5 border-t border-border pt-6">
-            <h3 className="font-display text-xl text-white">Adresse</h3>
-            <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-4 sm:grid-cols-[minmax(0,1fr)_10rem] sm:gap-5">
-              <Field label="Straße" name="street" errors={s?.errors?.street}>
-                <Input id="street" name="street" autoComplete="address-line1" defaultValue={profile.street ?? ""} maxLength={80} />
-              </Field>
-              <Field label="Hausnr." name="houseNumber" errors={s?.errors?.houseNumber}>
-                <Input id="houseNumber" name="houseNumber" defaultValue={profile.houseNumber ?? ""} maxLength={10} />
-              </Field>
-            </div>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5">
-              <Field label="PLZ" name="postalCode" errors={s?.errors?.postalCode}>
-                <Input id="postalCode" name="postalCode" autoComplete="postal-code" defaultValue={profile.postalCode ?? ""} inputMode="numeric" maxLength={5} />
-              </Field>
-              <Field label="Stadt" name="city" errors={s?.errors?.city} required>
-                <Input id="city" name="city" autoComplete="address-level2" value={city} onChange={(e) => setCity(e.target.value)} maxLength={80} />
-              </Field>
-              <div className="col-span-2 sm:col-span-1">
-                <Field label="Bezirk" name="district" errors={s?.errors?.district}>
-                  {districts ? (
-                    <FancySelect key={`d-${city.trim().toLowerCase()}`} name="district" ariaLabel="Bezirk" placeholder="Bezirk wählen" defaultValue={districts.includes(district) ? district : ""}
-                      onChange={setDistrict} options={districts.map((d) => ({ value: d, label: d }))} />
-                  ) : (
-                    <Input id="district" name="district" value={district} onChange={(e) => setDistrict(e.target.value)} maxLength={80} />
-                  )}
-                </Field>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Switch id="showAddress" name="showAddress" checked={showAddress} onChange={setShowAddress} label="Adresse anzeigen" />
-              <label htmlFor="showAddress" className="text-sm font-medium text-foreground">Adresse anzeigen: <span className={showAddress ? "text-gold" : "text-muted"}>{showAddress ? "Ja" : "Nein"}</span></label>
-            </div>
-            <p className="text-xs text-subtle">
-              {showAddress ? "Straße, Hausnummer, PLZ, Stadt und Bezirk sind auf deiner Sedcard sichtbar." : "Öffentlich sind nur Bezirk und Stadt sichtbar – Straße und Hausnummer bleiben verborgen."}
-            </p>
-          </div>
         </div>
       )}
     </StepForm>
