@@ -83,9 +83,7 @@ export default async function ProfilePage({ params }: Params) {
     .filter((a) => a.person === 1 && a.filter.active && a.filter.section === "service")
     .map((a) => ({ key: a.filter.key, label: a.filter.label, type: a.filter.type, bool: a.boolValue, items: a.options.map((o) => o.option).filter((o) => o.active).sort((x, y) => x.sortOrder - y.sortOrder).map((o) => o.label) }));
   const serviceItems = (key: string) => serviceAttrs.find((a) => a.key === key)?.items ?? [];
-  // Outcall-Ort: „Beides“ wird öffentlich als „Hotel & Privat“ angezeigt
-  const outcallPlaceValue = p.attributes.find((a) => a.person === 1 && a.filter.key === OUTCALL_PLACE_KEY)?.options[0]?.option;
-  const outcallPlace = outcallPlaceValue ? (outcallPlaceValue.value === "privat-hotel" ? "Hotel & Privat" : outcallPlaceValue.label) : undefined;
+  const outcallPlace = serviceItems(OUTCALL_PLACE_KEY)[0];
   const serviceSummary = [
     { label: "Wen treff ich?", value: serviceItems("wen_treff_ich").join(", ") },
     { label: "Treffmöglichkeiten", value: serviceItems(MEETING_FILTER_KEY).map((l) => (l === "Outcall" && outcallPlace ? `Outcall (${outcallPlace})` : l)).join(", ") },

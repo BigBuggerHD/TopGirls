@@ -451,7 +451,7 @@ export function ServiceStep({ profileId, filters, values }: { profileId: string;
                   )}
                 </div>
                 {outcallOpt && place ? (
-                  <div className={cn("mt-3 flex flex-wrap items-center gap-2 transition-opacity", outcall ? "" : "opacity-60")} role="radiogroup" aria-label="Outcall: Hotel, Privat oder beides">
+                  <div className={cn("mt-3 flex flex-wrap items-center gap-2 transition-opacity", outcall ? "" : "opacity-60")} role="radiogroup" aria-label="Outcall: Hotel, Privat oder Hotel/Privat">
                     <span className="mr-1 text-xs uppercase tracking-wider text-subtle">Outcall</span>
                     {place.options.map((o) => (
                       <CheckPill key={o.id} type="radio" name={`attr_${place.key}`} value={o.id} label={o.label} checked={placeId === o.id}
