@@ -1,6 +1,6 @@
 "use client";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { ChevronDown } from "lucide-react";
+import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
@@ -16,7 +16,7 @@ export function TimeField({ value, onChange, disabled = false, ariaLabel, classN
     <div className="flex flex-col">
       <p className="px-2 pb-1 text-center text-[11px] uppercase tracking-wider text-subtle">{title}</p>
       <div
-        className="max-h-56 w-14 overflow-y-auto"
+        className="max-h-56 w-14 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         ref={(el) => {
           const item = el?.querySelector<HTMLElement>('[data-current="true"]');
           if (el && item) requestAnimationFrame(() => { el.scrollTop = item.offsetTop - el.offsetTop - el.clientHeight / 2 + item.clientHeight / 2; });
@@ -61,7 +61,7 @@ export function TimeField({ value, onChange, disabled = false, ariaLabel, classN
           aria-label={`${ariaLabel} auswählen`}
           className="group flex h-full items-center px-3 text-gold outline-none disabled:cursor-not-allowed"
         >
-          <ChevronDown className="size-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+          <Clock className="size-4 transition-opacity group-hover:opacity-80" />
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
           <DropdownMenu.Content align="end" sideOffset={6} className="z-50 flex gap-1 rounded-lg border border-border bg-surface p-1.5 shadow-2xl shadow-black/60">
