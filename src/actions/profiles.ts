@@ -81,7 +81,8 @@ export async function saveProfileDataAction(_: ActionState, fd: FormData): Promi
     data: {
       stageName: d.stageName, age: d.age ?? null, categoryId: cat.id,
       profileType: d.profileType, partnerName: duo ? d.partnerName : null, age2: duo ? d.age2 ?? null : null,
-      languages: (d.languages ?? "").split(",").map((s) => s.trim()).filter(Boolean).slice(0, 8),
+      // Sprachen werden vorerst nicht abgefragt – vorhandene Angaben nur ändern, wenn das Feld gesendet wird
+      ...(fd.has("languages") ? { languages: (d.languages ?? "").split(",").map((s) => s.trim()).filter(Boolean).slice(0, 8) } : {}),
       slug: p.slug.startsWith("entwurf-") || p.stageName !== d.stageName ? `${slugBase}-${randomSuffix(4)}` : p.slug,
       ...(changed ? reviewIfPublished(p.status) : {}),
     },

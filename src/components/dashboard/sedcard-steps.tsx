@@ -34,7 +34,7 @@ function StepForm({ action, profileId, children, last = false }: { action: Actio
 type BasicsProfile = { id: string; stageName: string; age: number | null; languages: string[]; categoryId: string; profileType: string; partnerName: string | null; age2: number | null };
 
 /**
- * Schritt 1 „Profildaten“: oben Profiltyp, Kategorie, Name, Alter, Sprachen – darunter die Eigenschaften.
+ * Schritt 1 „Profildaten“: oben Profiltyp, Kategorie, Name, Alter – darunter die Eigenschaften.
  * Bei „Duo“ erscheint sofort die zweite Person (ohne vorheriges Speichern).
  */
 export function ProfileDataStep({ profile, categories, filters, values }: { profile: BasicsProfile; categories: { id: string; name: string; slug: string }[]; filters: FilterDef[]; values: AttrValue[] }) {
@@ -122,9 +122,6 @@ export function ProfileDataStep({ profile, categories, filters, values }: { prof
                 </Field>
               </div>
             ) : null}
-            <Field label="Sprachen" name="languages" errors={s?.errors?.languages} hint="Kommagetrennt, z. B. Deutsch, Englisch">
-              <Input id="languages" name="languages" defaultValue={profile.languages.join(", ")} />
-            </Field>
           </div>
 
           {/* Eigenschaften */}
