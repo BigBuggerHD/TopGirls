@@ -4,8 +4,8 @@ import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
-/** Minuten in 10er-Schritten */
-const MINUTES = ["00", "10", "20", "30", "40", "50"];
+/** Minuten in 5er-Schritten */
+const MINUTES = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0"));
 
 /**
  * Uhrzeitfeld im Dropdown-Design: freie Eingabe (Stunden/Minuten wie beim normalen Zeitfeld)
@@ -50,7 +50,7 @@ export function TimeField({ value, onChange, disabled = false, ariaLabel, classN
     >
       <input
         type="time"
-        step={600}
+        step={300}
         value={value}
         onChange={(e) => e.target.value && onChange(e.target.value)}
         disabled={disabled}
