@@ -53,7 +53,7 @@ export default async function AdminProfileDetail({ params, searchParams }: { par
               <div><dt className="text-subtle">Adresse</dt><dd>{[[p.street, p.houseNumber].filter(Boolean).join(" "), [p.postalCode, p.city].filter(Boolean).join(" "), p.district].filter(Boolean).join(", ") || "–"} <span className="text-xs text-subtle">({p.showAddress ? "öffentlich" : "nur Bezirk + Stadt öffentlich"})</span></dd></div>
               <div><dt className="text-subtle">Slogan</dt><dd>{p.headline ?? "–"}</dd></div>
               <div><dt className="text-subtle">Sprachen</dt><dd>{p.languages.join(", ") || "–"}</dd></div>
-              <div><dt className="text-subtle">Telefon</dt><dd>{p.contactPhone ?? "–"} {p.contactPhone ? <span className={p.phoneVerifiedAt ? "text-xs text-success" : "text-xs text-warning"}>({p.phoneVerifiedAt ? "SMS-verifiziert" : "nicht verifiziert"})</span> : null}{p.whatsappEnabled ? " · WhatsApp" : ""}{p.telegramEnabled ? " · Telegram" : ""}</dd></div>
+              <div><dt className="text-subtle">Telefon</dt><dd>{p.contactPhone ?? "–"} {p.contactPhone ? <span className={p.phoneVerifiedAt ? "text-xs text-success" : "text-xs text-warning"}>({p.phoneVerifiedAt ? "SMS-verifiziert" : "nicht verifiziert"})</span> : null}{p.whatsappEnabled ? " · WhatsApp" : ""}{p.telegramEnabled ? ` · Telegram${p.telegramUsername ? ` (@${p.telegramUsername})` : ""}` : ""}</dd></div>
               <div><dt className="text-subtle">Einwilligungen bestätigt</dt><dd>{formatDateTime(p.consentConfirmedAt)}</dd></div>
             </dl>
             <p className="mt-4 whitespace-pre-line rounded-lg bg-background-alt p-4 text-sm text-foreground/85">{p.description || "–"}</p>

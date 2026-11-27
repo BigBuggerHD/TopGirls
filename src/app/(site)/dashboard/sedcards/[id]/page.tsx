@@ -93,7 +93,7 @@ export default async function EditSedcardPage({ params, searchParams }: { params
         {step === 2 && (
           <ContactDataStep
             profile={{
-              id: p.id, contactPhone: p.contactPhone, phoneVerified: !!p.phoneVerifiedAt, whatsappEnabled: p.whatsappEnabled, telegramEnabled: p.telegramEnabled,
+              id: p.id, contactPhone: p.contactPhone, phoneVerified: !!p.phoneVerifiedAt, whatsappEnabled: p.whatsappEnabled, telegramEnabled: p.telegramEnabled, telegramUsername: p.telegramUsername,
               street: p.street, houseNumber: p.houseNumber, postalCode: p.postalCode, city: p.city, district: p.district, showAddress: p.showAddress,
             }}
           />

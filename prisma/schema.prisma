@@ -253,6 +253,7 @@ model Profile {
   phoneVerifiedAt    DateTime? // SMS-Bestätigung; wird bei Änderung der Nummer zurückgesetzt
   whatsappEnabled    Boolean       @default(false) // erreichbar per WhatsApp (gleiche Nummer)
   telegramEnabled    Boolean       @default(false) // erreichbar per Telegram (gleiche Nummer)
+  telegramUsername   String? // optional, ohne @ – Link t.me/<name> statt Telefonnummer
   street             String?
   houseNumber        String?
   district           String? // Bezirk

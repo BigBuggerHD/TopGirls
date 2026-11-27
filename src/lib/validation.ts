@@ -57,6 +57,7 @@ export const profileContactDataSchema = z.object({
   contactPhone: z.string().trim().max(30).optional(),
   whatsappEnabled: z.literal("on").optional(),
   telegramEnabled: z.literal("on").optional(),
+  telegramUsername: z.string().trim().max(60).optional(),
   street: optionalText(80),
   houseNumber: z.string().trim().max(10, "Höchstens 10 Zeichen.").regex(/^[0-9A-Za-z /-]*$/, "Ungültige Hausnummer.").optional().transform((v) => v || undefined),
   postalCode: z.string().trim().regex(/^\d{5}$/, "Bitte gib eine gültige fünfstellige Postleitzahl an.").optional().or(z.literal("").transform(() => undefined)),

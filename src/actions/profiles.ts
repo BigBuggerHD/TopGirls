@@ -15,6 +15,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { hmacSha256Hex, safeEqual } from "@/lib/crypto";
 import { env } from "@/lib/env";
 import { normalizePhone } from "@/lib/phone";
+import { normalizeTelegramUsername } from "@/lib/messenger";
 import { sendSms, smsDevMode, SmsNotConfiguredError } from "@/lib/sms";
 import { randomInt } from "node:crypto";
 import { audit } from "@/lib/audit";
@@ -123,11 +124,14 @@ export async function saveContactDataAction(_: ActionState, fd: FormData): Promi
   const d = parsed.data;
   const phone = d.contactPhone ? normalizePhone(d.contactPhone) : null;
   if (d.contactPhone && !phone) return { ok: false, message: "Bitte prüfe deine Eingaben.", errors: { contactPhone: ["Ungültige Telefonnummer, z. B. 0151 1234567 oder +49 151 1234567."] } };
+  const telegramEnabled = d.telegramEnabled === "on";
+  const tgUser = normalizeTelegramUsername(d.telegramUsername ?? "");
+  if (telegramEnabled && tgUser === null) return { ok: false, message: "Bitte prüfe deine Eingaben.", errors: { telegramUsername: ["Ungültiger Benutzername (5–32 Zeichen: Buchstaben, Ziffern, _)."] } };
   const showAddress = d.showAddress === "on";
   if (showAddress && (!d.street || !d.houseNumber)) {
     return { ok: false, message: "Bitte prüfe deine Eingaben.", errors: { street: d.street ? [] : ["Für die Anzeige der Adresse bitte Straße angeben."], houseNumber: d.houseNumber ? [] : ["Bitte Hausnr. angeben."] } };
   }
-  const text = checkProfileText(`${d.street ?? ""} ${d.district ?? ""} ${d.city}`);
+  const text = checkProfileText(`${d.street ?? ""} ${d.district ?? ""} ${d.city} ${tgUser ?? ""}`);
   if (text.flagged) return { ok: false, message: `Unzulässiger Inhalt: ${text.reasons.join(", ")}.` };
   await db.profile.update({
     where: { id: p.id },
@@ -135,7 +139,9 @@ export async function saveContactDataAction(_: ActionState, fd: FormData): Promi
       contactPhone: phone,
       // Neue oder geänderte Nummer muss erneut per SMS bestätigt werden
       ...(phone !== p.contactPhone ? { phoneVerifiedAt: null } : {}),
-      whatsappEnabled: d.whatsappEnabled === "on", telegramEnabled: d.telegramEnabled === "on",
+      whatsappEnabled: d.whatsappEnabled === "on", telegramEnabled,
+      // Benutzername nur ändern, wenn Telegram aktiv ist (sonst bleibt er für später erhalten)
+      ...(telegramEnabled ? { telegramUsername: tgUser || null } : {}),
       street: d.street, houseNumber: d.houseNumber ?? null, postalCode: d.postalCode ?? null,
       city: d.city, district: d.district, showAddress,
     },

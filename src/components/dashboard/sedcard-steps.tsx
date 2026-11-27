@@ -16,9 +16,11 @@ import type { Availability } from "@/lib/availability";
 import { AvailabilityEditor, PriceEditor } from "./availability-price-editors";
 import { FancySelect } from "@/components/ui/fancy-select";
 import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { formatPhone, normalizePhone } from "@/lib/phone";
 import { districtsForCity } from "@/lib/districts";
+import { WHATSAPP_GREETING } from "@/lib/messenger";
 
 type Action = (s: ActionState, fd: FormData) => Promise<ActionState>;
 
@@ -232,7 +234,7 @@ type AttrValue = { filterId: string; person: number; numberValue: number | null;
 
 
 type ContactDataProfile = {
-  id: string; contactPhone: string | null; phoneVerified: boolean; whatsappEnabled: boolean; telegramEnabled: boolean;
+  id: string; contactPhone: string | null; phoneVerified: boolean; whatsappEnabled: boolean; telegramEnabled: boolean; telegramUsername: string | null;
   street: string | null; houseNumber: string | null; postalCode: string | null; city: string; district: string | null; showAddress: boolean;
 };
 
@@ -247,6 +249,7 @@ export function ContactDataStep({ profile }: { profile: ContactDataProfile }) {
   const [city, setCity] = useState(profile.city);
   const [district, setDistrict] = useState(profile.district ?? "");
   const [showAddress, setShowAddress] = useState(profile.showAddress);
+  const [telegram, setTelegram] = useState(profile.telegramEnabled);
   const verified = !!verifiedPhone && normalizePhone(phone) === verifiedPhone;
   const districts = districtsForCity(city);
 
@@ -303,46 +306,56 @@ export function ContactDataStep({ profile }: { profile: ContactDataProfile }) {
               {showAddress ? "Straße, Hausnummer, PLZ, Stadt und Bezirk sind auf deiner Sedcard sichtbar." : "Öffentlich sind nur Bezirk und Stadt sichtbar – Straße und Hausnummer bleiben verborgen."}
             </p>
           </div>
-          {/* Telefonnummer */}
-          <div className="space-y-3 border-t border-border pt-6">
-            <Field label="Telefonnummer" name="contactPhone" errors={s?.errors?.contactPhone} required hint="Wird per SMS-Code bestätigt. Pflicht für die Veröffentlichung.">
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Input id="contactPhone" name="contactPhone" type="tel" autoComplete="tel" placeholder="z. B. 0151 1234567" value={phone}
-                  onChange={(e) => { setPhone(e.target.value); setCodeSent(false); setSms(null); }} className="sm:max-w-xs" />
-                {!verified ? (
-                  <Button type="button" variant="outline" onClick={sendCode} disabled={pending || !phone.trim()}>{codeSent ? "Code erneut senden" : "Code per SMS senden"}</Button>
-                ) : null}
-              </div>
-            </Field>
-            <p className={verified ? "flex items-center gap-1.5 text-sm text-success" : "flex items-center gap-1.5 text-sm text-warning"}>
-              {verified ? <BadgeCheck className="size-4" /> : <CircleAlert className="size-4" />}
-              {verified ? "Telefonnummer verifiziert" : "Telefonnummer noch nicht verifiziert"}
-            </p>
-            {codeSent && !verified ? (
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                <div className="space-y-1.5">
-                  <label htmlFor="smsCode" className="text-sm font-medium text-foreground">SMS-Code</label>
-                  <Input id="smsCode" inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="6-stelliger Code" value={code}
-                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); verifyCode(); } }} className="sm:w-48" />
+          {/* Telefonnummer + Messenger nebeneinander */}
+          <div className="grid gap-8 border-t border-border pt-6 md:grid-cols-2">
+            {/* Telefonnummer */}
+            <div className="min-w-0 space-y-3">
+              <Field label="Telefonnummer" name="contactPhone" errors={s?.errors?.contactPhone} required hint="Wird per SMS-Code bestätigt. Pflicht für die Veröffentlichung.">
+                <div className="flex flex-col gap-3 sm:flex-row md:flex-col xl:flex-row">
+                  <Input id="contactPhone" name="contactPhone" type="tel" autoComplete="tel" placeholder="z. B. 0151 1234567" value={phone}
+                    onChange={(e) => { setPhone(e.target.value); setCodeSent(false); setSms(null); }} className="min-w-0 sm:flex-1" />
+                  {!verified ? (
+                    <Button type="button" variant="outline" className="shrink-0" onClick={sendCode} disabled={pending || !phone.trim()}>{codeSent ? "Code erneut senden" : "Code per SMS senden"}</Button>
+                  ) : null}
                 </div>
-                <Button type="button" onClick={verifyCode} disabled={pending || code.length !== 6}>Bestätigen</Button>
-              </div>
-            ) : null}
-            {sms ? <p role="status" className={sms.ok ? "text-sm text-muted" : "text-sm text-danger"}>{sms.message}</p> : null}
-            {sms?.devCode ? <p className="rounded-lg border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-warning">Testmodus (noch kein SMS-Anbieter angebunden): Dein Code lautet <strong>{sms.devCode}</strong>.</p> : null}
-          </div>
-
-          {/* Messenger */}
-          <div className="space-y-3 border-t border-border pt-6">
-            <h3 className="font-display text-xl text-white">Messenger</h3>
-            <div className="flex flex-wrap gap-x-8 gap-y-3 text-sm">
-              <label className="flex items-center gap-2"><Checkbox name="whatsappEnabled" defaultChecked={profile.whatsappEnabled} /> WhatsApp</label>
-              <label className="flex items-center gap-2"><Checkbox name="telegramEnabled" defaultChecked={profile.telegramEnabled} /> Telegram</label>
+              </Field>
+              <p className={verified ? "flex items-center gap-1.5 text-sm text-success" : "flex items-center gap-1.5 text-sm text-warning"}>
+                {verified ? <BadgeCheck className="size-4" /> : <CircleAlert className="size-4" />}
+                {verified ? "Telefonnummer verifiziert" : "Telefonnummer noch nicht verifiziert"}
+              </p>
+              {codeSent && !verified ? (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <div className="space-y-1.5">
+                    <label htmlFor="smsCode" className="text-sm font-medium text-foreground">SMS-Code</label>
+                    <Input id="smsCode" inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="6-stelliger Code" value={code}
+                      onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); verifyCode(); } }} className="sm:w-48" />
+                  </div>
+                  <Button type="button" onClick={verifyCode} disabled={pending || code.length !== 6}>Bestätigen</Button>
+                </div>
+              ) : null}
+              {sms ? <p role="status" className={sms.ok ? "text-sm text-muted" : "text-sm text-danger"}>{sms.message}</p> : null}
+              {sms?.devCode ? <p className="rounded-lg border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-warning">Testmodus (noch kein SMS-Anbieter angebunden): Dein Code lautet <strong>{sms.devCode}</strong>.</p> : null}
             </div>
-            <p className="text-xs text-subtle">Erreichbar über deine oben angegebene Telefonnummer.</p>
-          </div>
 
+            {/* Messenger */}
+            <div className="min-w-0 space-y-3">
+              <div className="space-y-1.5">
+                <Label>Messenger</Label>
+                <div className="flex h-10 flex-wrap items-center gap-x-8 gap-y-2 text-sm">
+                  <label className="flex items-center gap-2"><Checkbox name="whatsappEnabled" defaultChecked={profile.whatsappEnabled} /> WhatsApp</label>
+                  <label className="flex items-center gap-2"><Checkbox name="telegramEnabled" checked={telegram} onChange={(e) => setTelegram(e.target.checked)} /> Telegram</label>
+                </div>
+                <p className="text-xs text-subtle">Über deine Telefonnummer. WhatsApp öffnet für Kunden direkt den Chat mit dir, vorausgefüllt mit „{WHATSAPP_GREETING}“</p>
+              </div>
+              {telegram ? (
+                <Field label="Telegram-Benutzername (empfohlen)" name="telegramUsername" errors={s?.errors?.telegramUsername}
+                  hint="Mit Benutzername öffnet der Telegram-Button immer deinen Chat – auch wenn deine Nummer in Telegram nicht auffindbar ist.">
+                  <Input id="telegramUsername" name="telegramUsername" placeholder="@benutzername" defaultValue={profile.telegramUsername ? `@${profile.telegramUsername}` : ""} maxLength={60} autoComplete="off" />
+                </Field>
+              ) : null}
+            </div>
+          </div>
         </div>
       )}
     </StepForm>
