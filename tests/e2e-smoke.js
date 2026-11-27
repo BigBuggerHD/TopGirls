@@ -7,7 +7,7 @@ require("node:fs").mkdirSync(out, { recursive: true });
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   const page = await ctx.newPage();
   const errors = [];
-  page.on("pageerror", (e) => errors.push("pageerror: " + e.message));
+  page.on("pageerror", (e) => errors.push(`pageerror (${page.url()}): ` + e.message));
   page.on("response", (r) => { if (r.status() === 404) errors.push("404: " + r.url()); });
   page.on("console", (m) => { if (m.type() === "error") errors.push("console: " + m.text()); });
   const step = async (name, fn) => { try { await fn(); console.log("✔", name); } catch (e) { console.log("✘", name, e.message.split("\n")[0]); await page.screenshot({ path: `${out}/fail-${name.replace(/\W+/g, "_")}.png` }); } };
