@@ -14,6 +14,7 @@ import { storage } from "@/lib/storage";
 import { rateLimit } from "@/lib/rate-limit";
 import { audit } from "@/lib/audit";
 import { PERSON_CATEGORIES, requiresModelConsent } from "@/lib/model-consent";
+import { WIZARD_HIDDEN_FILTER_KEYS } from "@/lib/meeting";
 import { WEEKDAYS } from "@/lib/labels";
 import { MAX_PRICE_ROWS, type PriceRow } from "@/lib/prices";
 import type { Availability } from "@/lib/availability";
@@ -174,6 +175,7 @@ async function writeAttributes(p: { id: string; profileType: string; categoryId:
     // Bei Wechsel von Duo zu Einzel: Angaben der zweiten Person entfernen
     if (!duo) await tx.profileAttribute.deleteMany({ where: { profileId: p.id, person: 2 } });
     for (const f of filters) {
+      if (WIZARD_HIDDEN_FILTER_KEYS.includes(f.key)) continue; // nicht im Formular → vorhandene Werte unverändert lassen
       const persons = duo && f.perPerson ? [1, 2] : [1];
       for (const person of persons) {
         const name = `${person === 2 ? "attr2" : "attr"}_${f.key}`;

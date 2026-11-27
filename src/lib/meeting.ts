@@ -12,3 +12,6 @@ export function meetingTypes(p: WithMeeting): { incall: boolean; outcall: boolea
   const values = new Set((p.attributes ?? []).flatMap((a) => a.options.map((o) => o.option.value)));
   return { incall: values.has(INCALL_VALUE), outcall: values.has(OUTCALL_VALUE) };
 }
+
+/** Eigenschaften, die im Sedcard-Assistenten vorerst nicht abgefragt werden (vorhandene Werte bleiben erhalten). */
+export const WIZARD_HIDDEN_FILTER_KEYS = [MEETING_FILTER_KEY, "leistungen"];

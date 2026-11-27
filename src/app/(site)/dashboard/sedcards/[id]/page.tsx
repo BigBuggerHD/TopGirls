@@ -8,6 +8,7 @@ import { formatDate } from "@/lib/format";
 import { PROFILE_STATUS, VERIFICATION_STATUS } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { parsePrices } from "@/lib/prices";
+import { WIZARD_HIDDEN_FILTER_KEYS } from "@/lib/meeting";
 import { deleteImageAction, deleteProfileAction, getPublishChecklist, pauseProfileAction, setCoverImageAction } from "@/actions/profiles";
 import { ContactStep, ProfileDataStep, DescriptionStep, ImagesStep, LocationStep, ModelConsentUpload, SubmitStep } from "@/components/dashboard/sedcard-steps";
 import { Badge } from "@/components/ui/badge";
@@ -84,7 +85,7 @@ export default async function EditSedcardPage({ params, searchParams }: { params
           <ProfileDataStep
             profile={p}
             categories={categories}
-            filters={filters.map((f) => ({ id: f.id, key: f.key, label: f.label, type: f.type, unit: f.unit, helpText: f.helpText, minValue: f.minValue, maxValue: f.maxValue, perPerson: f.perPerson, options: f.options.map((o) => ({ id: o.id, label: o.label })) }))}
+            filters={filters.filter((f) => !WIZARD_HIDDEN_FILTER_KEYS.includes(f.key)).map((f) => ({ id: f.id, key: f.key, label: f.label, type: f.type, unit: f.unit, helpText: f.helpText, minValue: f.minValue, maxValue: f.maxValue, perPerson: f.perPerson, options: f.options.map((o) => ({ id: o.id, label: o.label })) }))}
             values={p.attributes.map((a) => ({ filterId: a.filterId, person: a.person, numberValue: a.numberValue, boolValue: a.boolValue, optionIds: a.options.map((o) => o.optionId) }))}
           />
         )}
