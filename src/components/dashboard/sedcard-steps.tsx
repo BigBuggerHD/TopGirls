@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/button";
 import { formatPhone, normalizePhone } from "@/lib/phone";
 import { districtsForCity } from "@/lib/districts";
 import { WHATSAPP_GREETING } from "@/lib/messenger";
-import { MultiSelect } from "@/components/ui/multi-select";
 import { MEETING_FILTER_KEY, OUTCALL_PLACE_KEY, OUTCALL_VALUE } from "@/lib/meeting";
 
 type Action = (s: ActionState, fd: FormData) => Promise<ActionState>;
@@ -376,7 +375,7 @@ function CheckPill({ name, value, label, defaultChecked, onChange }: { name: str
 
 const SERVICE_TOP_KEYS = ["wen_treff_ich", MEETING_FILTER_KEY, OUTCALL_PLACE_KEY, "auch_mit"];
 
-/** Schritt 3 „Service“: Wen treff ich?, Treffmöglichkeiten, Auch mit, Serviceleistungen (Dropdowns mit Häkchen). */
+/** Schritt 3 „Service“: Wen treff ich?, Treffmöglichkeiten, Auch mit, dann jede Service-Gruppe als eigener Abschnitt mit Häkchen. */
 export function ServiceStep({ profileId, filters, values }: { profileId: string; filters: FilterDef[]; values: AttrValue[] }) {
   const byKey = (k: string) => filters.find((f) => f.key === k);
   const sel = (f: FilterDef) => values.find((v) => v.filterId === f.id && v.person === 1)?.optionIds ?? [];
@@ -385,7 +384,7 @@ export function ServiceStep({ profileId, filters, values }: { profileId: string;
   const [outcall, setOutcall] = useState(!!meeting && !!outcallOpt && sel(meeting).includes(outcallOpt.id));
   const place = byKey(OUTCALL_PLACE_KEY);
   const rest = filters.filter((f) => !SERVICE_TOP_KEYS.includes(f.key));
-  const dropdowns = rest.filter((f) => f.type === "MULTISELECT" || f.type === "SELECT");
+  const groups = rest.filter((f) => f.type === "MULTISELECT" || f.type === "SELECT");
   const flags = rest.filter((f) => f.type === "BOOLEAN");
 
   const pills = (f: FilterDef | undefined) =>
@@ -426,23 +425,30 @@ export function ServiceStep({ profileId, filters, values }: { profileId: string;
             {pills(byKey("auch_mit"))}
           </div>
 
-          {dropdowns.length || flags.length ? (
-            <div className="space-y-5 border-t border-border pt-6">
-              <h3 className="font-display text-xl text-white">Serviceleistungen</h3>
-              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                {dropdowns.map((f) => (
-                  <div key={f.id} className="min-w-0 space-y-1.5">
-                    <Label>{f.label}</Label>
-                    {f.type === "MULTISELECT" ? (
-                      <MultiSelect name={`attr_${f.key}`} ariaLabel={f.label} defaultValue={sel(f)} options={f.options.map((o) => ({ value: o.id, label: o.label }))} />
-                    ) : (
-                      <FancySelect name={`attr_${f.key}`} ariaLabel={f.label} defaultValue={sel(f)[0] ?? ""} options={f.options.map((o) => ({ value: o.id, label: o.label }))} />
-                    )}
-                  </div>
-                ))}
-              </div>
+          {/* Serviceleistungen: Abschnitt für Abschnitt, alle Punkte mit Häkchen */}
+          {groups.map((f) => (
+            <fieldset key={f.id} className="border-t border-border pt-6">
+              <legend className="sr-only">{f.label}</legend>
+              <h3 className="mb-4 font-display text-xl text-white" aria-hidden>{f.label}</h3>
+              {f.type === "MULTISELECT" ? (
+                <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {f.options.map((o) => (
+                    <label key={o.id} className="flex cursor-pointer items-center gap-2.5 text-sm text-muted transition-colors hover:text-foreground has-[:checked]:text-foreground">
+                      <Checkbox name={`attr_${f.key}`} value={o.id} defaultChecked={sel(f).includes(o.id)} /> {o.label}
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <div className="max-w-xs">
+                  <FancySelect name={`attr_${f.key}`} ariaLabel={f.label} defaultValue={sel(f)[0] ?? ""} options={f.options.map((o) => ({ value: o.id, label: o.label }))} />
+                </div>
+              )}
+            </fieldset>
+          ))}
+          {flags.length ? (
+            <div className="space-y-3 border-t border-border pt-6">
               {flags.map((f) => (
-                <label key={f.id} className="flex items-center gap-2 text-sm">
+                <label key={f.id} className="flex items-center gap-2.5 text-sm">
                   <Checkbox name={`attr_${f.key}`} value="yes" defaultChecked={values.find((v) => v.filterId === f.id && v.person === 1)?.boolValue === true} /> {f.label}
                 </label>
               ))}
