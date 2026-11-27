@@ -17,6 +17,7 @@ import { AvailabilityEditor, PriceEditor } from "./availability-price-editors";
 import { FancySelect } from "@/components/ui/fancy-select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { formatPhone, normalizePhone } from "@/lib/phone";
 import { districtsForCity } from "@/lib/districts";
@@ -373,6 +374,39 @@ function CheckPill({ name, value, label, defaultChecked, onChange }: { name: str
   );
 }
 
+/** Ein Service-Abschnitt als Karte: Überschrift, Zähler, „Alle auswählen“ und alle Punkte als anklickbare Felder. */
+function ServiceGroup({ name, label, options, initial }: { name: string; label: string; options: { id: string; label: string }[]; initial: string[] }) {
+  const [selected, setSelected] = useState<string[]>(initial);
+  const all = selected.length === options.length;
+  const toggle = (id: string, on: boolean) => setSelected((cur) => (on ? [...cur, id] : cur.filter((x) => x !== id)));
+  return (
+    <section className="rounded-xl border border-border bg-surface-2 p-3 sm:p-5" aria-label={label}>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="flex items-baseline gap-2">
+          <h4 className="font-display text-lg text-white">{label}</h4>
+          <span className={selected.length ? "text-xs text-gold" : "text-xs text-subtle"}>{selected.length}/{options.length}</span>
+        </div>
+        <button type="button" onClick={() => setSelected(all ? [] : options.map((o) => o.id))}
+          className="shrink-0 rounded-full border border-border px-3 py-1 text-xs text-muted transition-colors hover:border-gold/60 hover:text-gold">
+          {all ? "Alle abwählen" : "Alle auswählen"}
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-3 xl:grid-cols-4">
+        {options.map((o) => {
+          const on = selected.includes(o.id);
+          return (
+            <label key={o.id} className={cn("flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-2 text-[13px] leading-snug transition-colors sm:gap-2.5 sm:px-3 sm:text-sm",
+              on ? "border-gold/60 bg-gold/10 text-foreground" : "border-border bg-background-alt/60 text-muted hover:border-border-strong hover:text-foreground")}>
+              <Checkbox name={name} value={o.id} checked={on} onChange={(e) => toggle(o.id, e.target.checked)} />
+              <span className="min-w-0 hyphens-auto [overflow-wrap:anywhere]" lang="de">{o.label}</span>
+            </label>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 const SERVICE_TOP_KEYS = ["wen_treff_ich", MEETING_FILTER_KEY, OUTCALL_PLACE_KEY, "auch_mit"];
 
 /** Schritt 3 „Service“: Wen treff ich?, Treffmöglichkeiten, Auch mit, dann jede Service-Gruppe als eigener Abschnitt mit Häkchen. */
@@ -403,7 +437,7 @@ export function ServiceStep({ profileId, filters, values }: { profileId: string;
     <StepForm action={saveServiceAction} profileId={profileId}>
       {() => (
         <div className="space-y-8">
-          <div className="space-y-6">
+          <div className="space-y-6 rounded-xl border border-border bg-surface-2 p-4 sm:p-5">
             {pills(byKey("wen_treff_ich"))}
             {meeting ? (
               <fieldset>
@@ -425,30 +459,28 @@ export function ServiceStep({ profileId, filters, values }: { profileId: string;
             {pills(byKey("auch_mit"))}
           </div>
 
-          {/* Serviceleistungen: Abschnitt für Abschnitt, alle Punkte mit Häkchen */}
-          {groups.map((f) => (
-            <fieldset key={f.id} className="border-t border-border pt-6">
-              <legend className="sr-only">{f.label}</legend>
-              <h3 className="mb-4 font-display text-xl text-white" aria-hidden>{f.label}</h3>
-              {f.type === "MULTISELECT" ? (
-                <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {f.options.map((o) => (
-                    <label key={o.id} className="flex cursor-pointer items-center gap-2.5 text-sm text-muted transition-colors hover:text-foreground has-[:checked]:text-foreground">
-                      <Checkbox name={`attr_${f.key}`} value={o.id} defaultChecked={sel(f).includes(o.id)} /> {o.label}
-                    </label>
-                  ))}
-                </div>
-              ) : (
-                <div className="max-w-xs">
-                  <FancySelect name={`attr_${f.key}`} ariaLabel={f.label} defaultValue={sel(f)[0] ?? ""} options={f.options.map((o) => ({ value: o.id, label: o.label }))} />
-                </div>
-              )}
-            </fieldset>
-          ))}
+          {/* Serviceleistungen: Abschnitt für Abschnitt als Karten, alle Punkte mit Häkchen */}
+          {groups.length ? (
+            <div className="space-y-4 border-t border-border pt-6">
+              <h3 className="font-display text-2xl text-white">Serviceleistungen</h3>
+              <div className="space-y-4">
+                {groups.map((f) =>
+                  f.type === "MULTISELECT" ? (
+                    <ServiceGroup key={f.id} name={`attr_${f.key}`} label={f.label} options={f.options} initial={sel(f)} />
+                  ) : (
+                    <div key={f.id} className="rounded-xl border border-border bg-surface-2 p-4">
+                      <p className="mb-3 font-display text-lg text-white">{f.label}</p>
+                      <FancySelect name={`attr_${f.key}`} ariaLabel={f.label} defaultValue={sel(f)[0] ?? ""} options={f.options.map((o) => ({ value: o.id, label: o.label }))} />
+                    </div>
+                  ),
+                )}
+              </div>
+            </div>
+          ) : null}
           {flags.length ? (
-            <div className="space-y-3 border-t border-border pt-6">
+            <div className="space-y-3">
               {flags.map((f) => (
-                <label key={f.id} className="flex items-center gap-2.5 text-sm">
+                <label key={f.id} className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-border bg-surface-2 px-4 py-3.5 text-sm transition-colors hover:border-border-strong has-[:checked]:border-gold/60 has-[:checked]:bg-gold/10">
                   <Checkbox name={`attr_${f.key}`} value="yes" defaultChecked={values.find((v) => v.filterId === f.id && v.person === 1)?.boolValue === true} /> {f.label}
                 </label>
               ))}
