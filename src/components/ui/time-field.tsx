@@ -4,7 +4,8 @@ import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
-const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
+/** Minuten in 10er-Schritten */
+const MINUTES = ["00", "10", "20", "30", "40", "50"];
 
 /**
  * Uhrzeitfeld im Dropdown-Design: freie Eingabe (Stunden/Minuten wie beim normalen Zeitfeld)
@@ -49,6 +50,7 @@ export function TimeField({ value, onChange, disabled = false, ariaLabel, classN
     >
       <input
         type="time"
+        step={600}
         value={value}
         onChange={(e) => e.target.value && onChange(e.target.value)}
         disabled={disabled}
@@ -67,7 +69,7 @@ export function TimeField({ value, onChange, disabled = false, ariaLabel, classN
           <DropdownMenu.Content align="end" sideOffset={6} className="z-50 flex gap-1 rounded-lg border border-border bg-surface p-1.5 shadow-2xl shadow-black/60">
             {column("Std", HOURS, h, (v) => onChange(`${v}:${m}`), true)}
             <div className="w-px bg-border" />
-            {column("Min", MINUTES, m, (v) => onChange(`${h}:${v}`), false)}
+            {column("Min", MINUTES.includes(m) ? MINUTES : [...MINUTES, m].sort(), m, (v) => onChange(`${h}:${v}`), false)}
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
       </DropdownMenu.Root>
