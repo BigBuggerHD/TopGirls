@@ -93,8 +93,10 @@ export default async function EditSedcardPage({ params, searchParams }: { params
         {step === 4 && (
           <AttributesStep
             profileId={p.id}
-            filters={filters.map((f) => ({ id: f.id, key: f.key, label: f.label, type: f.type, unit: f.unit, helpText: f.helpText, minValue: f.minValue, maxValue: f.maxValue, options: f.options.map((o) => ({ id: o.id, label: o.label })) }))}
-            values={p.attributes.map((a) => ({ filterId: a.filterId, numberValue: a.numberValue, boolValue: a.boolValue, optionIds: a.options.map((o) => o.optionId) }))}
+            filters={filters.map((f) => ({ id: f.id, key: f.key, label: f.label, type: f.type, unit: f.unit, helpText: f.helpText, minValue: f.minValue, maxValue: f.maxValue, perPerson: f.perPerson, options: f.options.map((o) => ({ id: o.id, label: o.label })) }))}
+            values={p.attributes.map((a) => ({ filterId: a.filterId, person: a.person, numberValue: a.numberValue, boolValue: a.boolValue, optionIds: a.options.map((o) => o.optionId) }))}
+            duo={p.profileType === "DUO"}
+            names={[p.stageName.split("&")[0]?.trim() ?? p.stageName, p.partnerName ?? ""]}
           />
         )}
         {step === 5 && <LocationStep profile={p} />}

@@ -29,7 +29,7 @@ export function ProfileCard({ p, sponsored = false, priority = false, variant = 
         {sponsored ? <span className="absolute left-2.5 top-2.5 rounded-full bg-black/70 px-2 py-0.5 text-[10px] uppercase tracking-wider text-muted ring-1 ring-white/10">Gesponsert</span> : null}
         <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
           <p className="flex items-center gap-1.5 font-display text-2xl text-white sm:text-3xl">
-            <span>{p.stageName}{p.age ? <span className="text-lg text-white/70 sm:text-xl">, {p.age}</span> : null}</span>
+            <span>{p.stageName}{p.age ? <span className="text-lg text-white/70 sm:text-xl">, {p.age}{p.profileType === "DUO" && p.age2 ? ` & ${p.age2}` : ""}</span> : null}</span>
             {!banner && p.verified ? <BadgeCheck className="size-4 text-gold" aria-label="Verifiziert" /> : null}
           </p>
           <p className="mt-1 flex items-center gap-1 text-sm text-white/75"><MapPin className="size-3.5" /> {p.city}{banner ? "" : ` · ${p.category.name}`}</p>

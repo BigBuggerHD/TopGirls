@@ -179,6 +179,7 @@ model FilterDefinition {
   sortOrder   Int        @default(0)
   active      Boolean    @default(true)
   showInSearch Boolean   @default(true)
+  perPerson   Boolean    @default(false) // bei Duo-Profilen für jede Person getrennt
   minValue    Int?
   maxValue    Int?
   createdAt   DateTime   @default(now())
@@ -239,7 +240,10 @@ model Profile {
   city             String        @default("")
   postalCode       String?
   region           String?
+  profileType      String        @default("SINGLE") // SINGLE = Einzel, DUO = Duo (zwei Personen)
   age              Int? // angegebenes Alter (>= 18, serverseitig geprüft)
+  partnerName      String? // Duo: Name der zweiten Person
+  age2             Int? // Duo: Alter der zweiten Person (>= 18)
   languages        String[]      @default([])
   availability     Json? // { mo: {from,to,active}, ... }
   availabilityNote String?
@@ -310,12 +314,13 @@ model ProfileAttribute {
   profile     Profile          @relation(fields: [profileId], references: [id], onDelete: Cascade)
   filterId    String
   filter      FilterDefinition @relation(fields: [filterId], references: [id], onDelete: Cascade)
+  person      Int              @default(1) // 1 = Person 1, 2 = Person 2 (nur bei Duo-Profilen)
   numberValue Int?
   boolValue   Boolean?
 
   options ProfileAttributeOption[]
 
-  @@unique([profileId, filterId])
+  @@unique([profileId, filterId, person])
   @@index([filterId, numberValue])
 }
 

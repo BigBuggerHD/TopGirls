@@ -2,7 +2,7 @@ import { saveFilterAction } from "@/actions/admin";
 import { Button } from "@/components/ui/button";
 import { HiddenBack, inputCls } from "./ui";
 
-type F = { id: string; key: string; label: string; type: string; unit: string | null; helpText: string | null; sortOrder: number; minValue: number | null; maxValue: number | null; active: boolean; showInSearch: boolean; categoryIds: string[] };
+type F = { id: string; key: string; label: string; type: string; unit: string | null; helpText: string | null; sortOrder: number; minValue: number | null; maxValue: number | null; active: boolean; showInSearch: boolean; perPerson: boolean; categoryIds: string[] };
 
 export function FilterForm({ f, categories, back }: { f?: F; categories: { id: string; name: string }[]; back: string }) {
   return (
@@ -28,6 +28,7 @@ export function FilterForm({ f, categories, back }: { f?: F; categories: { id: s
       <div className="flex flex-wrap items-center gap-4 sm:col-span-2 lg:col-span-4">
         <label className="flex items-center gap-1.5"><input type="checkbox" name="active" defaultChecked={f?.active ?? true} className="accent-[#F3C2C6]" /> aktiv</label>
         <label className="flex items-center gap-1.5"><input type="checkbox" name="showInSearch" defaultChecked={f?.showInSearch ?? true} className="accent-[#F3C2C6]" /> in der Suche anzeigen</label>
+        <label className="flex items-center gap-1.5"><input type="checkbox" name="perPerson" defaultChecked={f?.perPerson ?? false} className="accent-[#F3C2C6]" /> pro Person (bei Duo getrennt)</label>
         <Button size="sm">{f ? "Speichern" : "Filter anlegen"}</Button>
       </div>
     </form>

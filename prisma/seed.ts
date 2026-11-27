@@ -144,49 +144,57 @@ async function main() {
   for (const [i, c] of catData.entries()) cats[c.slug] = (await db.category.create({ data: { ...c, sortOrder: i } })).id;
 
   // ── Dynamische Filter ──
-  type F = { key: string; label: string; type: FilterType; unit?: string; min?: number; max?: number; cats: string[]; options?: string[] };
+  // Eigenschaften der Kategorie „Frauen“ gemäß Vorgabe „Allgemein“ (Reihenfolge = sortOrder, perPerson = bei Duo je Person).
+  // Einige Filter legen die Migrationen bereits an – vorhandene werden hier aktualisiert statt doppelt angelegt.
+  type F = { key: string; label: string; type: FilterType; unit?: string; min?: number; max?: number; cats: string[]; options?: [string, string][]; sort: number; perPerson?: boolean; showInSearch?: boolean };
+  const o = (...labels: string[]): [string, string][] => labels.map((l) => [l.toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""), l]);
   const filterData: F[] = [
-    { key: "haarfarbe", label: "Haarfarbe", type: "SELECT", cats: ["frauen", "online-inserate"], options: ["Blond", "Brünett", "Schwarz", "Rot", "Grau/Silber"] },
-    { key: "augenfarbe", label: "Augenfarbe", type: "SELECT", cats: ["frauen", "online-inserate"], options: ["Blau", "Grün", "Braun", "Grau"] },
-    { key: "figur", label: "Figur", type: "SELECT", cats: ["frauen"], options: ["Schlank", "Sportlich", "Normal", "Kurvig"] },
-    { key: "koerpergroesse", label: "Körpergröße", type: "NUMBER", unit: "cm", min: 140, max: 210, cats: ["frauen"] },
-    { key: "treffpunkt", label: "Treffpunkt", type: "MULTISELECT", cats: ["frauen"], options: ["Eigene Räumlichkeiten", "Haus- & Hotelbesuche", "Begleitung zu Events"] },
-    { key: "online_format", label: "Online-Format", type: "MULTISELECT", cats: ["online-inserate"], options: ["Videochat", "Textchat", "Telefon"] },
-    { key: "massagearten", label: "Massagearten", type: "MULTISELECT", cats: ["massagen"], options: ["Klassisch", "Aromaöl", "Thai", "Hot Stone", "Tantra"] },
-    { key: "ausstattung", label: "Ausstattung", type: "MULTISELECT", cats: ["clubs", "massagen"], options: ["Bar", "Sauna", "Whirlpool", "Dusche", "Lounge"] },
-    { key: "parkplaetze", label: "Parkplätze vorhanden", type: "BOOLEAN", cats: ["clubs", "massagen"] },
-    { key: "barrierefrei", label: "Barrierefreier Zugang", type: "BOOLEAN", cats: ["clubs", "massagen"] },
-    { key: "rauchfrei", label: "Rauchfrei", type: "BOOLEAN", cats: ["frauen", "clubs", "massagen"] },
+    { key: "geschlecht", label: "Geschlecht", type: "SELECT", cats: ["frauen"], options: o("Mann", "Frau", "Trans"), sort: 1, perPerson: true },
+    { key: "orientierung", label: "Orientierung", type: "SELECT", cats: ["frauen"], options: [["hetero", "Heterosexuell"], ["homosexuell", "Homosexuell"], ["bi", "Bisexuell"], ["pansexuell", "Pansexuell"], ["asexuell", "Asexuell"], ["keine-angabe", "keine Angaben"]], sort: 2, perPerson: true },
+    { key: "koerpergroesse", label: "Größe", type: "NUMBER", unit: "cm", min: 140, max: 210, cats: ["frauen"], sort: 3, perPerson: true },
+    { key: "bh_umfang", label: "BH-Umfang", type: "SELECT", cats: ["frauen"], options: Array.from({ length: 11 }, (_, i) => [String(60 + i * 5), String(60 + i * 5)] as [string, string]), sort: 4, perPerson: true, showInSearch: false },
+    { key: "koerbchengroesse", label: "Cup-Größe", type: "SELECT", cats: ["frauen"], options: o("A", "B", "C", "D", "DD", "E", "F", "G", "H"), sort: 5, perPerson: true },
+    { key: "brust", label: "Brust", type: "SELECT", cats: ["frauen"], options: o("Natur", "Operiert"), sort: 6, perPerson: true },
+    { key: "schuhgroesse", label: "Schuhgröße", type: "NUMBER", min: 34, max: 46, cats: ["frauen"], sort: 7, perPerson: true, showInSearch: false },
+    { key: "figur", label: "Figur", type: "SELECT", cats: ["frauen"], options: o("Schlank", "Sportlich", "Normal", "Kurvig", "Mollig", "BBW", "Feminin"), sort: 8, perPerson: true },
+    { key: "typ", label: "Typ", type: "SELECT", cats: ["frauen"], options: o("Europäisch", "Mediterran", "Asiatisch", "Lateinamerikanisch", "Afrikanisch", "Arabisch", "Gemischt"), sort: 9, perPerson: true },
+    { key: "haarfarbe", label: "Haarfarbe", type: "SELECT", cats: ["frauen", "online-inserate"], options: [["blond", "Blond"], ["bruenett", "Brünett"], ["braun", "Braun"], ["schwarz", "Schwarz"], ["rot", "Rot"], ["grau-silber", "Grau"], ["andere", "Andere"]], sort: 10, perPerson: true },
+    { key: "haarlaenge", label: "Haarlänge", type: "SELECT", cats: ["frauen"], options: o("Lang", "Kurz", "Glatze"), sort: 11, perPerson: true },
+    { key: "augenfarbe", label: "Augenfarbe", type: "SELECT", cats: ["frauen", "online-inserate"], options: o("Blau", "Grün", "Braun", "Grau", "Schwarz"), sort: 12, perPerson: true },
+    { key: "piercings", label: "Piercings", type: "SELECT", cats: ["frauen"], options: o("Keine", "Wenige", "Mehrere", "Viele"), sort: 13, perPerson: true },
+    { key: "tattoos", label: "Tattoos", type: "SELECT", cats: ["frauen"], options: o("Keine", "Wenige", "Mehrere", "Viele"), sort: 14, perPerson: true },
+    { key: "intimbereich", label: "Rasiert", type: "SELECT", cats: ["frauen"], options: [["rasiert", "Rasiert"], ["natuerlich", "Unrasiert"]], sort: 15, perPerson: true },
+    { key: "raucher", label: "Raucher", type: "SELECT", cats: ["frauen"], options: o("Nein", "Gelegentlich", "Ja"), sort: 16, perPerson: true },
+    { key: "treffpunkt", label: "Treffpunkt", type: "MULTISELECT", cats: ["frauen"], options: o("Eigene Räumlichkeiten", "Haus- & Hotelbesuche", "Begleitung zu Events"), sort: 50 },
+    { key: "online_format", label: "Online-Format", type: "MULTISELECT", cats: ["online-inserate"], options: o("Videochat", "Textchat", "Telefon"), sort: 51 },
+    { key: "massagearten", label: "Massagearten", type: "MULTISELECT", cats: ["massagen"], options: o("Klassisch", "Aromaöl", "Thai", "Hot Stone", "Tantra"), sort: 52 },
+    { key: "ausstattung", label: "Ausstattung", type: "MULTISELECT", cats: ["clubs", "massagen"], options: o("Bar", "Sauna", "Whirlpool", "Dusche", "Lounge"), sort: 53 },
+    { key: "parkplaetze", label: "Parkplätze vorhanden", type: "BOOLEAN", cats: ["clubs", "massagen"], sort: 54 },
+    { key: "barrierefrei", label: "Barrierefreier Zugang", type: "BOOLEAN", cats: ["clubs", "massagen"], sort: 55 },
+    { key: "rauchfrei", label: "Rauchfrei", type: "BOOLEAN", cats: ["clubs", "massagen"], sort: 56 },
   ];
   const filters: Record<string, { id: string; type: FilterType; options: { id: string; value: string }[] }> = {};
-  for (const [i, f] of filterData.entries()) {
-    const created = await db.filterDefinition.create({
-      data: {
-        key: f.key, label: f.label, type: f.type, unit: f.unit, minValue: f.min, maxValue: f.max, sortOrder: i,
-        categories: { create: f.cats.map((slug) => ({ categoryId: cats[slug] })) },
-        options: f.options ? { create: f.options.map((o, j) => ({ value: o.toLowerCase().replace(/[^a-z0-9äöü]+/g, "-").replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue"), label: o, sortOrder: j })) } : undefined,
-      },
-      include: { options: true },
-    });
-    filters[f.key] = { id: created.id, type: created.type, options: created.options.map((o) => ({ id: o.id, value: o.value })) };
+  for (const f of filterData) {
+    const def = { label: f.label, type: f.type, unit: f.unit ?? null, minValue: f.min ?? null, maxValue: f.max ?? null, sortOrder: f.sort, perPerson: !!f.perPerson, showInSearch: f.showInSearch ?? true, active: true };
+    const fd = await db.filterDefinition.upsert({ where: { key: f.key }, create: { key: f.key, ...def }, update: def });
+    for (const [j, [value, label]] of (f.options ?? []).entries()) {
+      await db.filterOption.upsert({ where: { filterId_value: { filterId: fd.id, value } }, create: { filterId: fd.id, value, label, sortOrder: j }, update: { label, sortOrder: j, active: true } });
+    }
+    await db.filterCategory.createMany({ data: f.cats.map((slug) => ({ filterId: fd.id, categoryId: cats[slug] })), skipDuplicates: true });
   }
-
-  // „Leistungen“ wird per Migration angelegt (siehe prisma/migrations/*_sedcard_preise_leistungen) – hier mit „Frauen“ verknüpfen
-  // Weitere Eigenschaften werden per Migration angelegt (*_sedcard_14_eigenschaften) – ebenfalls mit „Frauen“ verknüpfen
-  const migrated = await db.filterDefinition.findMany({
-    where: { key: { in: ["leistungen", "konfektionsgroesse", "koerbchengroesse", "schuhgroesse", "tattoos", "piercings", "typ", "intimbereich", "orientierung"] } },
-    include: { options: true },
-  });
-  for (const f of migrated) {
-    await db.filterCategory.createMany({ data: [{ filterId: f.id, categoryId: cats["frauen"] }], skipDuplicates: true });
-    filters[f.key] = { id: f.id, type: f.type, options: f.options.map((o) => ({ id: o.id, value: o.value })) };
+  // Von Migrationen angelegte Zusatz-Filter: Leistungen aktiv mit „Frauen“ verknüpfen; Haarlänge-Altoptionen, Konfektion und Gewicht inaktiv
+  const services = await db.filterDefinition.findUnique({ where: { key: "leistungen" } });
+  if (services) await db.filterCategory.createMany({ data: [{ filterId: services.id, categoryId: cats["frauen"] }], skipDuplicates: true });
+  await db.filterDefinition.updateMany({ where: { key: { in: ["konfektionsgroesse", "gewicht"] } }, data: { active: false } });
+  for (const f of await db.filterDefinition.findMany({ include: { options: true } })) {
+    filters[f.key] = { id: f.id, type: f.type, options: f.options.filter((x) => x.active).map((x) => ({ id: x.id, value: x.value })) };
   }
 
   // ── Profile ──
   const CITIES = [["Berlin", "10115", "Berlin"], ["Hamburg", "20095", "Hamburg"], ["München", "80331", "Bayern"], ["Köln", "50667", "Nordrhein-Westfalen"], ["Frankfurt am Main", "60311", "Hessen"], ["Düsseldorf", "40213", "Nordrhein-Westfalen"], ["Stuttgart", "70173", "Baden-Württemberg"], ["Leipzig", "04109", "Sachsen"]];
   const availability = { mo: { active: true, from: "12:00", to: "22:00" }, di: { active: true, from: "12:00", to: "22:00" }, mi: { active: false }, do: { active: true, from: "14:00", to: "23:00" }, fr: { active: true, from: "14:00", to: "02:00" }, sa: { active: true, from: "16:00", to: "02:00" }, so: { active: false } };
 
-  type P = { owner: string; cat: string; name: string; age?: number; headline: string; premium?: boolean; highlight?: boolean; sponsored?: boolean; status?: "PUBLISHED" | "PENDING_REVIEW" | "DRAFT"; attrs?: Record<string, string[] | number | boolean>; langs?: string[] };
+  type P = { owner: string; cat: string; name: string; age?: number; headline: string; premium?: boolean; highlight?: boolean; sponsored?: boolean; status?: "PUBLISHED" | "PENDING_REVIEW" | "DRAFT"; attrs?: Record<string, string[] | number | boolean>; langs?: string[]; duo?: { name: string; age: number; attrs: Record<string, string[] | number | boolean> } };
   const profiles: P[] = [
     { owner: agency.id, cat: "frauen", name: "Amélie", age: 26, headline: "Charmante Begleitung mit Stil", premium: true, attrs: { haarfarbe: ["blond"], augenfarbe: ["blau"], figur: ["schlank"], koerpergroesse: 172, treffpunkt: ["haus-hotelbesuche", "begleitung-zu-events"], rauchfrei: true }, langs: ["Deutsch", "Französisch", "Englisch"] },
     { owner: agency.id, cat: "frauen", name: "Valentina", age: 29, headline: "Elegant, gebildet, weltoffen", premium: true, highlight: true, attrs: { haarfarbe: ["bruenett"], augenfarbe: ["braun"], figur: ["sportlich"], koerpergroesse: 168, treffpunkt: ["begleitung-zu-events"] }, langs: ["Deutsch", "Italienisch"] },
@@ -203,6 +211,8 @@ async function main() {
     { owner: club.id, cat: "clubs", name: "Aurum Lounge", headline: "Die neue Lounge – stilvoll entspannen", attrs: { ausstattung: ["bar", "lounge", "whirlpool"], parkplaetze: false, rauchfrei: true } },
     { owner: studio.id, cat: "massagen", name: "Lotus Studio", headline: "Entspannung auf höchstem Niveau", highlight: true, attrs: { massagearten: ["klassisch", "aromaoel", "hot-stone"], ausstattung: ["dusche", "lounge"], parkplaetze: true, barrierefrei: true, rauchfrei: true } },
     { owner: studio.id, cat: "massagen", name: "Lotus City", headline: "Massagen in zentraler Lage", sponsored: true, attrs: { massagearten: ["thai", "klassisch", "tantra"], ausstattung: ["dusche"], parkplaetze: false, rauchfrei: true } },
+    { owner: agency.id, cat: "frauen", name: "Mia & Zoe", age: 25, headline: "Doppelt charmant – das Duo für besondere Abende", attrs: { haarfarbe: ["blond"], augenfarbe: ["blau"], figur: ["schlank"], koerpergroesse: 168, treffpunkt: ["eigene-raeumlichkeiten", "haus-hotelbesuche"] }, langs: ["Deutsch", "Englisch"],
+      duo: { name: "Zoe", age: 27, attrs: { geschlecht: ["frau"], orientierung: ["bi"], koerpergroesse: 172, bh_umfang: ["75"], koerbchengroesse: ["c"], brust: ["natur"], schuhgroesse: 39, figur: ["sportlich"], typ: ["mediterran"], haarfarbe: ["schwarz"], haarlaenge: ["lang"], augenfarbe: ["braun"], piercings: ["wenige"], tattoos: ["keine"], intimbereich: ["rasiert"], raucher: ["nein"] } } },
     { owner: newProvider.id, cat: "frauen", name: "Nina", age: 22, headline: "Bald online", status: "DRAFT", attrs: { haarfarbe: ["blond"] } },
   ];
 
@@ -221,17 +231,22 @@ async function main() {
     const isWoman = p.cat === "frauen";
     if (isWoman) {
       const svc = [["dinner-date", "begleitung-events", "uebernachtung"], ["reisebegleitung", "dinner-date", "wellness"], ["massage", "girlfriend-experience", "dinner-date"], ["begleitung-events", "massage"]][i % 4];
+      const { rauchfrei: smokeFree, ...rest } = (p.attrs ?? {}) as Record<string, string[] | number | boolean>;
       p.attrs = {
-        ...(p.attrs ?? {}),
+        ...rest,
         leistungen: svc,
-        konfektionsgroesse: [["34", "36", "38", "36"][i % 4]],
-        koerbchengroesse: [["b", "c", "d", "c"][i % 4]],
+        geschlecht: ["frau"],
+        koerbchengroesse: [["b", "c", "d", "dd"][i % 4]],
+        bh_umfang: [["70", "75", "80", "75"][i % 4]],
+        brust: [["natur", "natur", "operiert"][i % 3]],
         schuhgroesse: 37 + (i % 4),
-        typ: [["europaeisch", "suedlaendisch", "osteuropaeisch", "lateinamerikanisch"][i % 4]],
-        intimbereich: [["rasiert", "teilrasiert", "natuerlich"][i % 3]],
-        orientierung: [["hetero", "bi"][i % 2]],
-        tattoos: i % 3 === 0,
-        piercings: i % 2 === 0,
+        typ: [["europaeisch", "mediterran", "lateinamerikanisch", "gemischt"][i % 4]],
+        haarlaenge: [["lang", "kurz", "lang"][i % 3]],
+        intimbereich: [["rasiert", "natuerlich"][i % 2]],
+        orientierung: [["hetero", "bi", "pansexuell"][i % 3]],
+        tattoos: [["keine", "wenige", "mehrere"][i % 3]],
+        piercings: [["wenige", "keine"][i % 2]],
+        raucher: [smokeFree === true ? "nein" : ["nein", "gelegentlich"][i % 2]],
       };
     }
     const prices = isWoman
@@ -246,6 +261,7 @@ async function main() {
       data: {
         ...(prices ? { prices, priceNote: "Alle Preise verstehen sich als Richtwerte. Details nach persönlicher Absprache." } : {}),
         slug, ownerId: p.owner, categoryId: cats[p.cat], stageName: p.name, headline: p.headline, age: p.age ?? null,
+        ...(p.duo ? { profileType: "DUO", partnerName: p.duo.name, age2: p.duo.age } : {}),
         description: DESCRIPTIONS[p.cat === "clubs" || p.cat === "massagen" ? 2 : i % 2],
         city, postalCode: plz, region, languages: p.langs ?? ["Deutsch"], availability, availabilityNote: "Termine bitte mit mindestens 2 Stunden Vorlauf anfragen.",
         contactPhone: `+49 30 ${String(5550100 + i).padStart(7, "0")}`, contactWhatsapp: i % 3 === 0 ? `+49 151 ${String(5550100 + i).padStart(7, "0")}` : null,
@@ -268,17 +284,21 @@ async function main() {
       await db.profileImage.create({ data: { ...img, profileId: created.id, status: status === "DRAFT" ? "PENDING" : k === 2 && status === "PENDING_REVIEW" ? "PENDING" : "APPROVED", isCover: k === 0, sortOrder: k } });
     }
 
-    // Eigenschaften
-    for (const [key, val] of Object.entries(p.attrs ?? {})) {
-      const f = filters[key];
-      if (!f) continue;
-      if (Array.isArray(val)) {
-        const optIds = f.options.filter((o) => val.includes(o.value)).map((o) => o.id);
-        await db.profileAttribute.create({ data: { profileId: created.id, filterId: f.id, options: { create: optIds.map((optionId) => ({ optionId })) } } });
-      } else if (typeof val === "number") {
-        await db.profileAttribute.create({ data: { profileId: created.id, filterId: f.id, numberValue: val } });
-      } else {
-        await db.profileAttribute.create({ data: { profileId: created.id, filterId: f.id, boolValue: val } });
+    // Eigenschaften (bei Duo zusätzlich für Person 2)
+    const people: [number, Record<string, string[] | number | boolean>][] = [[1, p.attrs ?? {}], ...(p.duo ? [[2, p.duo.attrs] as [number, Record<string, string[] | number | boolean>]] : [])];
+    for (const [person, attrs] of people) {
+      for (const [key, val] of Object.entries(attrs)) {
+        const f = filters[key];
+        if (!f) continue;
+        const base = { profileId: created.id, filterId: f.id, person };
+        if (Array.isArray(val)) {
+          const optIds = f.options.filter((x) => val.includes(x.value)).map((x) => x.id);
+          if (optIds.length) await db.profileAttribute.create({ data: { ...base, options: { create: optIds.map((optionId) => ({ optionId })) } } });
+        } else if (typeof val === "number") {
+          await db.profileAttribute.create({ data: { ...base, numberValue: val } });
+        } else {
+          await db.profileAttribute.create({ data: { ...base, boolValue: val } });
+        }
       }
     }
 

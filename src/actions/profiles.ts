@@ -68,15 +68,18 @@ export async function saveBasicsAction(_: ActionState, fd: FormData): Promise<Ac
   const cat = await db.category.findFirst({ where: { id: d.categoryId, active: true } });
   if (!cat) return { ok: false, errors: { categoryId: ["Ungültige Kategorie."] } };
   if (PERSON_CATEGORIES.includes(cat.slug) && !d.age) return { ok: false, message: "Bitte prüfe deine Eingaben.", errors: { age: ["Bitte gib das Alter an (mindestens 18)."] } };
-  const text = checkProfileText(`${d.stageName} ${d.headline ?? ""}`);
+  const duo = d.profileType === "DUO";
+  if (duo && PERSON_CATEGORIES.includes(cat.slug) && !d.age2) return { ok: false, message: "Bitte prüfe deine Eingaben.", errors: { age2: ["Bitte gib das Alter der zweiten Person an (mindestens 18)."] } };
+  const text = checkProfileText(`${d.stageName} ${d.partnerName ?? ""} ${d.headline ?? ""}`);
   if (text.flagged) return { ok: false, message: `Unzulässiger Inhalt: ${text.reasons.join(", ")}.` };
 
-  const changed = d.stageName !== p.stageName || d.headline !== p.headline || d.age !== p.age;
+  const changed = d.stageName !== p.stageName || d.headline !== p.headline || d.age !== p.age || (duo && (d.age2 !== p.age2 || d.partnerName !== p.partnerName)) || d.profileType !== p.profileType;
   const slugBase = slugify(`${d.stageName}-${p.city || cat.slug}`) || "sedcard";
   await db.profile.update({
     where: { id: p.id },
     data: {
       stageName: d.stageName, headline: d.headline, age: d.age ?? null, categoryId: cat.id,
+      profileType: d.profileType, partnerName: duo ? d.partnerName : null, age2: duo ? d.age2 ?? null : null,
       languages: (d.languages ?? "").split(",").map((s) => s.trim()).filter(Boolean).slice(0, 8),
       slug: p.slug.startsWith("entwurf-") || p.stageName !== d.stageName ? `${slugBase}-${randomSuffix(4)}` : p.slug,
       ...(changed ? reviewIfPublished(p.status) : {}),
@@ -162,23 +165,30 @@ export async function saveAttributesAction(_: ActionState, fd: FormData): Promis
   if (!p) return { ok: false, message: "Sedcard nicht gefunden." };
   const filters = await db.filterDefinition.findMany({ where: { active: true, categories: { some: { categoryId: p.categoryId } } }, include: { options: { where: { active: true } } } });
 
+  const duo = p.profileType === "DUO";
   await db.$transaction(async (tx) => {
+    // Bei Wechsel von Duo zu Einzel: Angaben der zweiten Person entfernen
+    if (!duo) await tx.profileAttribute.deleteMany({ where: { profileId: p.id, person: 2 } });
     for (const f of filters) {
-      const name = `attr_${f.key}`;
-      await tx.profileAttribute.deleteMany({ where: { profileId: p.id, filterId: f.id } });
-      if (f.type === "SELECT" || f.type === "MULTISELECT") {
-        const values = fd.getAll(name).map(String);
-        const optionIds = f.options.filter((o) => values.includes(o.id)).map((o) => o.id).slice(0, f.type === "SELECT" ? 1 : 50);
-        if (optionIds.length) await tx.profileAttribute.create({ data: { profileId: p.id, filterId: f.id, options: { create: optionIds.map((optionId) => ({ optionId })) } } });
-      } else if (f.type === "BOOLEAN") {
-        const v = fd.get(name);
-        if (v === "yes" || v === "no") await tx.profileAttribute.create({ data: { profileId: p.id, filterId: f.id, boolValue: v === "yes" } });
-      } else if (f.type === "NUMBER") {
-        const raw = String(fd.get(name) ?? "").trim();
-        if (raw) {
-          const n = Math.round(Number(raw));
-          if (Number.isFinite(n) && (f.minValue == null || n >= f.minValue) && (f.maxValue == null || n <= f.maxValue)) {
-            await tx.profileAttribute.create({ data: { profileId: p.id, filterId: f.id, numberValue: n } });
+      const persons = duo && f.perPerson ? [1, 2] : [1];
+      for (const person of persons) {
+        const name = `${person === 2 ? "attr2" : "attr"}_${f.key}`;
+        await tx.profileAttribute.deleteMany({ where: { profileId: p.id, filterId: f.id, person } });
+        const base = { profileId: p.id, filterId: f.id, person };
+        if (f.type === "SELECT" || f.type === "MULTISELECT") {
+          const values = fd.getAll(name).map(String);
+          const optionIds = f.options.filter((o) => values.includes(o.id)).map((o) => o.id).slice(0, f.type === "SELECT" ? 1 : 50);
+          if (optionIds.length) await tx.profileAttribute.create({ data: { ...base, options: { create: optionIds.map((optionId) => ({ optionId })) } } });
+        } else if (f.type === "BOOLEAN") {
+          const v = fd.get(name);
+          if (v === "yes" || v === "no") await tx.profileAttribute.create({ data: { ...base, boolValue: v === "yes" } });
+        } else if (f.type === "NUMBER") {
+          const raw = String(fd.get(name) ?? "").trim();
+          if (raw) {
+            const n = Math.round(Number(raw));
+            if (Number.isFinite(n) && (f.minValue == null || n >= f.minValue) && (f.maxValue == null || n <= f.maxValue)) {
+              await tx.profileAttribute.create({ data: { ...base, numberValue: n } });
+            }
           }
         }
       }

@@ -37,7 +37,7 @@ export default async function AdminProfileDetail({ params, searchParams }: { par
     <div>
       <Link href="/admin/sedcards" className="text-xs text-subtle hover:text-gold">← Sedcard-Verwaltung</Link>
       <div className="mb-6 mt-2 flex flex-wrap items-center gap-3">
-        <h1 className="font-display text-4xl text-white">{p.stageName}{p.age ? `, ${p.age}` : ""}</h1>
+        <h1 className="font-display text-4xl text-white">{p.stageName}{p.age ? `, ${p.age}` : ""}{p.profileType === "DUO" ? ` & ${p.partnerName ?? "Person 2"}${p.age2 ? `, ${p.age2}` : ""} (Duo)` : ""}</h1>
         <Badge variant={p.status === "PUBLISHED" ? "success" : p.status === "PENDING_REVIEW" ? "warning" : "default"}>{PROFILE_STATUS[p.status]}</Badge>
       </div>
       <AdminFlash sp={sp} />
@@ -57,7 +57,7 @@ export default async function AdminProfileDetail({ params, searchParams }: { par
               <div><dt className="text-subtle">Einwilligungen bestätigt</dt><dd>{formatDateTime(p.consentConfirmedAt)}</dd></div>
             </dl>
             <p className="mt-4 whitespace-pre-line rounded-lg bg-background-alt p-4 text-sm text-foreground/85">{p.description || "–"}</p>
-            {p.attributes.length ? <p className="mt-3 text-xs text-muted">{p.attributes.map((a) => `${a.filter.label}: ${a.numberValue ?? (a.boolValue == null ? a.options.map((o) => o.option.label).join("/") : a.boolValue ? "Ja" : "Nein")}`).join(" · ")}</p> : null}
+            {p.attributes.length ? <p className="mt-3 text-xs text-muted">{p.attributes.map((a) => `${a.filter.label}${a.person === 2 ? " (Person 2)" : ""}: ${a.numberValue ?? (a.boolValue == null ? a.options.map((o) => o.option.label).join("/") : a.boolValue ? "Ja" : "Nein")}`).join(" · ")}</p> : null}
           </section>
           <section className="rounded-xl border border-border bg-surface p-5">
             <h2 className="mb-3 font-display text-xl text-white">Bilder ({p.images.length})</h2>

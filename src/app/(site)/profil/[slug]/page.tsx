@@ -57,17 +57,23 @@ export default async function ProfilePage({ params }: Params) {
     where: { active: true, key: { notIn: HIDDEN_IN_TABLE }, categories: { some: { categoryId: p.categoryId } } },
     orderBy: { sortOrder: "asc" },
   });
-  const traits: { label: string; value: string }[] = [
-    { label: "Alter", value: p.age ? `${p.age} Jahre` : "–" },
-    ...categoryFilters.map((f) => {
-      const a = p.attributes.find((x) => x.filterId === f.id);
-      const value = !a ? ""
-        : f.type === "BOOLEAN" ? (a.boolValue == null ? "" : a.boolValue ? "Ja" : "Nein")
-        : f.type === "NUMBER" ? (a.numberValue != null ? `${a.numberValue}${f.unit ? ` ${f.unit}` : ""}` : "")
-        : a.options.map((o) => o.option.label).join(", ");
-      return { label: f.label, value: value || "–" };
-    }),
-  ];
+  const duo = p.profileType === "DUO";
+  const valueFor = (f: (typeof categoryFilters)[number], person: number) => {
+    const a = p.attributes.find((x) => x.filterId === f.id && x.person === person);
+    const value = !a ? ""
+      : f.type === "BOOLEAN" ? (a.boolValue == null ? "" : a.boolValue ? "Ja" : "Nein")
+      : f.type === "NUMBER" ? (a.numberValue != null ? `${a.numberValue}${f.unit ? ` ${f.unit}` : ""}` : "")
+      : a.options.map((o) => o.option.label).join(", ");
+    return value || "–";
+  };
+  // Zeilen in Listen-Reihenfolge; „Alter“ steht nach „Orientierung“ (bzw. am Anfang)
+  const traits: { label: string; values: [string, string] }[] = categoryFilters.map((f) => ({
+    label: f.label,
+    values: [valueFor(f, 1), duo && f.perPerson ? valueFor(f, 2) : valueFor(f, 1)] as [string, string],
+  }));
+  const ageRow = { label: "Alter", values: [p.age ? `${p.age} Jahre` : "–", p.age2 ? `${p.age2} Jahre` : "–"] as [string, string] };
+  const orientationIndex = categoryFilters.findIndex((f) => f.key === "orientierung");
+  traits.splice(orientationIndex >= 0 ? orientationIndex + 1 : 0, 0, ageRow);
   // Preisliste: Spalte nur befüllen, wenn Incall bzw. Outcall beim Treffpunkt gewählt ist (ohne Auswahl: beide)
   const prices = parsePrices(p.prices);
   const noMeetingChoice = !meeting.incall && !meeting.outcall;
@@ -92,10 +98,11 @@ export default async function ProfilePage({ params }: Params) {
           <div className="flex flex-wrap items-center gap-2">
             {p.verified ? <Badge variant="success"><BadgeCheck className="size-3" /> Verifiziert</Badge> : null}
             <Badge>{p.category.name}</Badge>
+            {duo ? <Badge variant="rose">Duo</Badge> : null}
             {meeting.incall ? <Badge><House className="size-3" /> Incall</Badge> : null}
             {meeting.outcall ? <Badge><Car className="size-3" /> Outcall</Badge> : null}
           </div>
-          <h1 className="mt-4 font-display text-5xl text-white">{p.stageName}{p.age ? <span className="text-3xl text-muted">, {p.age}</span> : null}</h1>
+          <h1 className="mt-4 font-display text-5xl text-white">{p.stageName}{p.age ? <span className="text-3xl text-muted">, {p.age}{duo && p.age2 ? ` & ${p.age2}` : ""}</span> : null}</h1>
           {p.headline ? <p className="mt-2 text-lg text-gold-light">{p.headline}</p> : null}
           <p className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted">
             <span className="flex items-center gap-1.5"><MapPin className="size-4 text-gold" /> {p.postalCode ? `${p.postalCode} ` : ""}{p.city}{p.region ? `, ${p.region}` : ""}</span>
@@ -115,14 +122,34 @@ export default async function ProfilePage({ params }: Params) {
               {traits.length ? (
                 <section>
                   <h2 className="mb-3 font-display text-2xl text-white">Eigenschaften</h2>
-                  <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-                    {traits.map((t) => (
-                      <div key={t.label} className="flex justify-between gap-3 border-b border-border pb-2 text-sm">
-                        <dt className="text-subtle">{t.label}</dt>
-                        <dd className={`text-right ${t.value === "–" ? "text-subtle" : "text-foreground"}`}>{t.value}</dd>
-                      </div>
-                    ))}
-                  </dl>
+                  {duo ? (
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border text-left">
+                          <th className="pb-2 font-normal text-subtle"><span className="sr-only">Eigenschaft</span></th>
+                          <th className="pb-2 text-right font-display text-lg font-normal text-white">{p.stageName.split("&")[0]?.trim() || "Person 1"}</th>
+                          <th className="pb-2 text-right font-display text-lg font-normal text-white">{p.partnerName || "Person 2"}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {traits.map((t) => (
+                          <tr key={t.label} className="border-b border-border">
+                            <td className="py-2 text-subtle">{t.label}</td>
+                            {t.values.map((v, i) => <td key={i} className={`py-2 text-right ${v === "–" ? "text-subtle" : "text-foreground"}`}>{v}</td>)}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+                      {traits.map((t) => (
+                        <div key={t.label} className="flex justify-between gap-3 border-b border-border pb-2 text-sm">
+                          <dt className="text-subtle">{t.label}</dt>
+                          <dd className={`text-right ${t.values[0] === "–" ? "text-subtle" : "text-foreground"}`}>{t.values[0]}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  )}
                 </section>
               ) : null}
             </div>

@@ -41,6 +41,9 @@ export const profileBasicsSchema = z.object({
   headline: optionalText(90),
   age: z.coerce.number().int().min(18, "Das Mindestalter beträgt 18 Jahre.").max(99).optional().or(z.literal("").transform(() => undefined)),
   languages: z.string().trim().max(200).optional(),
+  profileType: z.enum(["SINGLE", "DUO"]).default("SINGLE"),
+  partnerName: optionalText(40),
+  age2: z.coerce.number().int().min(18, "Das Mindestalter beträgt 18 Jahre.").max(99).optional().or(z.literal("").transform(() => undefined)),
 });
 
 export const profileDescriptionSchema = z.object({

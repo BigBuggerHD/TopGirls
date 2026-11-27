@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import {
   saveAttributesAction, saveBasicsAction, saveContactAction, saveDescriptionAction, saveLocationAction,
   submitForReviewAction, uploadImagesAction, uploadModelConsentAction,
@@ -12,6 +12,7 @@ import type { ActionState } from "@/lib/validation";
 import type { PriceRow } from "@/lib/prices";
 import type { Availability } from "@/lib/availability";
 import { AvailabilityEditor, PriceEditor } from "./availability-price-editors";
+import { FancySelect } from "@/components/ui/fancy-select";
 
 type Action = (s: ActionState, fd: FormData) => Promise<ActionState>;
 
@@ -30,32 +31,45 @@ function StepForm({ action, profileId, children, last = false }: { action: Actio
   );
 }
 
-export function BasicsStep({ profile, categories }: { profile: { id: string; stageName: string; headline: string | null; age: number | null; languages: string[]; categoryId: string }; categories: { id: string; name: string; slug: string }[] }) {
+type BasicsProfile = { id: string; stageName: string; headline: string | null; age: number | null; languages: string[]; categoryId: string; profileType: string; partnerName: string | null; age2: number | null };
+
+export function BasicsStep({ profile, categories }: { profile: BasicsProfile; categories: { id: string; name: string; slug: string }[] }) {
+  const [duo, setDuo] = useState(profile.profileType === "DUO");
   return (
     <StepForm action={saveBasicsAction} profileId={profile.id}>
       {(s) => (
         <>
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Künstlername" name="stageName" errors={s?.errors?.stageName} required hint="Verwende keinen bürgerlichen Namen.">
-              <Input id="stageName" name="stageName" defaultValue={profile.stageName === "Neue Sedcard" ? "" : profile.stageName} maxLength={40} />
+            <Field label="Profiltyp" name="profileType" required hint="Duo: zwei Personen mit jeweils eigenen Eigenschaften.">
+              <FancySelect name="profileType" allowEmpty={false} defaultValue={profile.profileType} onChange={(v) => setDuo(v === "DUO")} ariaLabel="Profiltyp"
+                options={[{ value: "SINGLE", label: "Einzel" }, { value: "DUO", label: "Duo" }]} />
             </Field>
             <Field label="Kategorie" name="categoryId" errors={s?.errors?.categoryId} required>
-              <Select id="categoryId" name="categoryId" defaultValue={profile.categoryId}>
-                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </Select>
+              <FancySelect name="categoryId" allowEmpty={false} defaultValue={profile.categoryId} ariaLabel="Kategorie" options={categories.map((c) => ({ value: c.id, label: c.name }))} />
+            </Field>
+            <Field label="Sedcard Name" name="stageName" errors={s?.errors?.stageName} required hint={duo ? "Name der Sedcard, z. B. „Lara & Mia“. Keine bürgerlichen Namen." : "Verwende keinen bürgerlichen Namen."}>
+              <Input id="stageName" name="stageName" defaultValue={profile.stageName === "Neue Sedcard" ? "" : profile.stageName} maxLength={40} />
+            </Field>
+            <Field label={duo ? "Alter Person 1" : "Alter"} name="age" errors={s?.errors?.age} hint="Pflicht für persönliche Profile. Mindestens 18.">
+              <Input id="age" name="age" type="number" min={18} max={99} defaultValue={profile.age ?? ""} />
             </Field>
           </div>
+          {duo ? (
+            <div className="grid gap-5 rounded-lg border border-border bg-background-alt p-4 sm:grid-cols-2">
+              <Field label="Name Person 2" name="partnerName" errors={s?.errors?.partnerName} hint="Künstlername der zweiten Person.">
+                <Input id="partnerName" name="partnerName" defaultValue={profile.partnerName ?? ""} maxLength={40} />
+              </Field>
+              <Field label="Alter Person 2" name="age2" errors={s?.errors?.age2} hint="Mindestens 18.">
+                <Input id="age2" name="age2" type="number" min={18} max={99} defaultValue={profile.age2 ?? ""} />
+              </Field>
+            </div>
+          ) : null}
           <Field label="Kurzbeschreibung / Slogan" name="headline" errors={s?.errors?.headline}>
             <Input id="headline" name="headline" defaultValue={profile.headline ?? ""} maxLength={90} />
           </Field>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Alter" name="age" errors={s?.errors?.age} hint="Pflicht für persönliche Profile. Mindestens 18.">
-              <Input id="age" name="age" type="number" min={18} max={99} defaultValue={profile.age ?? ""} />
-            </Field>
-            <Field label="Sprachen" name="languages" errors={s?.errors?.languages} hint="Kommagetrennt, z. B. Deutsch, Englisch">
-              <Input id="languages" name="languages" defaultValue={profile.languages.join(", ")} />
-            </Field>
-          </div>
+          <Field label="Sprachen" name="languages" errors={s?.errors?.languages} hint="Kommagetrennt, z. B. Deutsch, Englisch">
+            <Input id="languages" name="languages" defaultValue={profile.languages.join(", ")} />
+          </Field>
         </>
       )}
     </StepForm>
@@ -120,61 +134,73 @@ export function ImagesStep({ profileId, images, onDelete, onCover }: {
   );
 }
 
-type FilterDef = { id: string; key: string; label: string; type: "SELECT" | "MULTISELECT" | "BOOLEAN" | "NUMBER"; unit: string | null; helpText: string | null; minValue: number | null; maxValue: number | null; options: { id: string; label: string }[] };
-type AttrValue = { filterId: string; numberValue: number | null; boolValue: boolean | null; optionIds: string[] };
+type FilterDef = { id: string; key: string; label: string; type: "SELECT" | "MULTISELECT" | "BOOLEAN" | "NUMBER"; unit: string | null; helpText: string | null; minValue: number | null; maxValue: number | null; perPerson: boolean; options: { id: string; label: string }[] };
+type AttrValue = { filterId: string; person: number; numberValue: number | null; boolValue: boolean | null; optionIds: string[] };
 
-export function AttributesStep({ profileId, filters, values }: { profileId: string; filters: FilterDef[]; values: AttrValue[] }) {
-  const byFilter = new Map(values.map((v) => [v.filterId, v]));
+export function AttributesStep({ profileId, filters, values, duo, names }: { profileId: string; filters: FilterDef[]; values: AttrValue[]; duo: boolean; names: [string, string] }) {
   if (filters.length === 0) return <p className="text-sm text-muted">Für diese Kategorie sind keine Eigenschaften konfiguriert.</p>;
+  const valueOf = (filterId: string, person: number) => values.find((v) => v.filterId === filterId && v.person === person);
+  const personal = filters.filter((f) => f.perPerson);
+  const shared = filters.filter((f) => !f.perPerson);
+
+  /** Ein Eingabefeld; Person 2 erhält das Präfix attr2_. */
+  const field = (f: FilterDef, person: 1 | 2) => {
+    const v = valueOf(f.id, person);
+    const name = `${person === 2 ? "attr2" : "attr"}_${f.key}`;
+    const aria = duo && f.perPerson ? `${f.label} (Person ${person})` : f.label;
+    if (f.type === "SELECT") {
+      return (
+        <Field key={name} label={f.label} name={name} hint={f.helpText ?? undefined}>
+          <FancySelect name={name} defaultValue={v?.optionIds[0] ?? ""} ariaLabel={aria} options={f.options.map((o) => ({ value: o.id, label: o.label }))} />
+        </Field>
+      );
+    }
+    if (f.type === "BOOLEAN") {
+      return (
+        <Field key={name} label={f.label} name={name}>
+          <FancySelect name={name} defaultValue={v?.boolValue == null ? "" : v.boolValue ? "yes" : "no"} ariaLabel={aria} options={[{ value: "yes", label: "Ja" }, { value: "no", label: "Nein" }]} />
+        </Field>
+      );
+    }
+    if (f.type === "MULTISELECT") {
+      return (
+        <fieldset key={name} className="space-y-2 sm:col-span-2">
+          <legend className="text-sm font-medium">{f.label}</legend>
+          <div className="flex flex-wrap gap-2">
+            {f.options.map((o) => (
+              <label key={o.id} className="flex cursor-pointer items-center gap-2 rounded-full border border-border px-3 py-1.5 text-sm has-[:checked]:border-gold has-[:checked]:bg-gold/10 has-[:checked]:text-gold">
+                <input type="checkbox" name={name} value={o.id} defaultChecked={v?.optionIds.includes(o.id)} className="sr-only" />
+                {o.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      );
+    }
+    return (
+      <Field key={name} label={`${f.label}${f.unit ? ` (${f.unit})` : ""}`} name={name} hint={f.minValue != null && f.maxValue != null ? `${f.minValue}–${f.maxValue}` : undefined}>
+        <Input id={name} name={name} type="number" min={f.minValue ?? undefined} max={f.maxValue ?? undefined} defaultValue={v?.numberValue ?? ""} />
+      </Field>
+    );
+  };
+
   return (
     <StepForm action={saveAttributesAction} profileId={profileId}>
       {() => (
-        <div className="grid gap-6 sm:grid-cols-2">
-          {filters.map((f) => {
-            const v = byFilter.get(f.id);
-            const name = `attr_${f.key}`;
-            if (f.type === "SELECT") {
-              return (
-                <Field key={f.id} label={f.label} name={name} hint={f.helpText ?? undefined}>
-                  <Select id={name} name={name} defaultValue={v?.optionIds[0] ?? ""}>
-                    <option value="">Keine Angabe</option>
-                    {f.options.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-                  </Select>
-                </Field>
-              );
-            }
-            if (f.type === "MULTISELECT") {
-              return (
-                <fieldset key={f.id} className="space-y-2 sm:col-span-2">
-                  <legend className="text-sm font-medium">{f.label}</legend>
-                  <div className="flex flex-wrap gap-2">
-                    {f.options.map((o) => (
-                      <label key={o.id} className="flex cursor-pointer items-center gap-2 rounded-full border border-border px-3 py-1.5 text-sm has-[:checked]:border-gold has-[:checked]:bg-gold/10 has-[:checked]:text-gold">
-                        <input type="checkbox" name={name} value={o.id} defaultChecked={v?.optionIds.includes(o.id)} className="sr-only" />
-                        {o.label}
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
-              );
-            }
-            if (f.type === "BOOLEAN") {
-              return (
-                <Field key={f.id} label={f.label} name={name}>
-                  <Select id={name} name={name} defaultValue={v?.boolValue == null ? "" : v.boolValue ? "yes" : "no"}>
-                    <option value="">Keine Angabe</option>
-                    <option value="yes">Ja</option>
-                    <option value="no">Nein</option>
-                  </Select>
-                </Field>
-              );
-            }
-            return (
-              <Field key={f.id} label={`${f.label}${f.unit ? ` (${f.unit})` : ""}`} name={name} hint={f.minValue != null && f.maxValue != null ? `${f.minValue}–${f.maxValue}` : undefined}>
-                <Input id={name} name={name} type="number" min={f.minValue ?? undefined} max={f.maxValue ?? undefined} defaultValue={v?.numberValue ?? ""} />
-              </Field>
-            );
-          })}
+        <div className="space-y-8">
+          {duo ? (
+            <div className="grid gap-6 lg:grid-cols-2">
+              {([1, 2] as const).map((person) => (
+                <section key={person} className="space-y-4 rounded-lg border border-border bg-background-alt p-4">
+                  <h3 className="font-display text-xl text-white">Person {person}{names[person - 1] ? ` – ${names[person - 1]}` : ""}</h3>
+                  <div className="grid gap-4 sm:grid-cols-2">{personal.map((f) => field(f, person))}</div>
+                </section>
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-6 sm:grid-cols-2">{personal.map((f) => field(f, 1))}</div>
+          )}
+          {shared.length ? <div className="grid gap-6 sm:grid-cols-2">{shared.map((f) => field(f, 1))}</div> : null}
         </div>
       )}
     </StepForm>

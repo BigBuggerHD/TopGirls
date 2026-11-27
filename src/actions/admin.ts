@@ -372,7 +372,7 @@ export async function saveFilterAction(fd: FormData) {
   const data = {
     ...d, unit: d.unit || null, helpText: d.helpText || null,
     minValue: minValue ? Number(minValue) : null, maxValue: maxValue ? Number(maxValue) : null,
-    active: fd.get("active") === "on", showInSearch: fd.get("showInSearch") === "on",
+    active: fd.get("active") === "on", showInSearch: fd.get("showInSearch") === "on", perPerson: fd.get("perPerson") === "on",
   };
   try {
     const f = id ? await db.filterDefinition.update({ where: { id }, data }) : await db.filterDefinition.create({ data });

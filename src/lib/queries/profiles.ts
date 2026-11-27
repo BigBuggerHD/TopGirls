@@ -14,7 +14,7 @@ export const publicProfileWhere = (): Prisma.ProfileWhereInput => ({
 });
 
 export const cardSelect = {
-  id: true, slug: true, stageName: true, headline: true, city: true, age: true, verified: true,
+  id: true, slug: true, stageName: true, headline: true, city: true, age: true, age2: true, profileType: true, verified: true,
   premiumUntil: true, highlightUntil: true, sponsoredUntil: true,
   category: { select: { name: true, slug: true } },
   images: { where: { status: "APPROVED" }, orderBy: [{ isCover: "desc" }, { sortOrder: "asc" }], take: 1, select: { thumbKey: true } },
@@ -52,8 +52,8 @@ export function buildWhere(sp: SearchParams, filters: FilterWithOptions[], categ
   if (one(sp.verifiziert) === "1") and.push({ verified: true });
   const ageMin = Number(one(sp.alter_min));
   const ageMax = Number(one(sp.alter_max));
-  if (ageMin >= 18) and.push({ age: { gte: ageMin } });
-  if (ageMax >= 18) and.push({ age: { lte: ageMax } });
+  if (ageMin >= 18) and.push({ OR: [{ age: { gte: ageMin } }, { age2: { gte: ageMin } }] });
+  if (ageMax >= 18) and.push({ OR: [{ age: { lte: ageMax } }, { age2: { lte: ageMax } }] });
 
   for (const f of filters) {
     const p = `f_${f.key}`;
