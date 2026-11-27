@@ -93,7 +93,7 @@ export function PriceEditor({ initial }: { initial: PriceRow[] }) {
         </div>
       </div>
       <p className="text-xs text-subtle">
-        Bis zu {MAX_PRICE_ROWS} Positionen, z. B. „1 Stunde“. Leere Preisfelder erscheinen als „nach Absprache“. Angezeigt wird nur Incall bzw. Outcall, je nachdem, was du unter „Treffpunkt“ (Schritt 4) gewählt hast.
+        Bis zu {MAX_PRICE_ROWS} Positionen, z. B. „1 Stunde“. Leere Preisfelder erscheinen als „nach Absprache“. Angezeigt wird nur Incall bzw. Outcall, je nachdem, was du unter „Treffpunkt“ (Schritt 1 „Profildaten“) gewählt hast.
       </p>
       <div className="hidden grid-cols-[1fr_130px_130px] gap-3 text-xs text-subtle sm:grid"><span>Bezeichnung</span><span>Incall</span><span>Outcall</span></div>
       {rows.map((r, i) => (

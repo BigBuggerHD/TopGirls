@@ -58,7 +58,7 @@ export async function createProfileAction() {
   redirect(`/dashboard/sedcards/${p.id}?schritt=1`);
 }
 
-export async function saveBasicsAction(_: ActionState, fd: FormData): Promise<ActionState> {
+export async function saveProfileDataAction(_: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser();
   const p = await ownedProfile(String(fd.get("profileId")), user);
   if (!p) return { ok: false, message: "Sedcard nicht gefunden." };
@@ -70,21 +70,22 @@ export async function saveBasicsAction(_: ActionState, fd: FormData): Promise<Ac
   if (PERSON_CATEGORIES.includes(cat.slug) && !d.age) return { ok: false, message: "Bitte prüfe deine Eingaben.", errors: { age: ["Bitte gib das Alter an (mindestens 18)."] } };
   const duo = d.profileType === "DUO";
   if (duo && PERSON_CATEGORIES.includes(cat.slug) && !d.age2) return { ok: false, message: "Bitte prüfe deine Eingaben.", errors: { age2: ["Bitte gib das Alter der zweiten Person an (mindestens 18)."] } };
-  const text = checkProfileText(`${d.stageName} ${d.partnerName ?? ""} ${d.headline ?? ""}`);
+  const text = checkProfileText(`${d.stageName} ${d.partnerName ?? ""}`);
   if (text.flagged) return { ok: false, message: `Unzulässiger Inhalt: ${text.reasons.join(", ")}.` };
 
-  const changed = d.stageName !== p.stageName || d.headline !== p.headline || d.age !== p.age || (duo && (d.age2 !== p.age2 || d.partnerName !== p.partnerName)) || d.profileType !== p.profileType;
+  const changed = d.stageName !== p.stageName || d.age !== p.age || (duo && (d.age2 !== p.age2 || d.partnerName !== p.partnerName)) || d.profileType !== p.profileType;
   const slugBase = slugify(`${d.stageName}-${p.city || cat.slug}`) || "sedcard";
   await db.profile.update({
     where: { id: p.id },
     data: {
-      stageName: d.stageName, headline: d.headline, age: d.age ?? null, categoryId: cat.id,
+      stageName: d.stageName, age: d.age ?? null, categoryId: cat.id,
       profileType: d.profileType, partnerName: duo ? d.partnerName : null, age2: duo ? d.age2 ?? null : null,
       languages: (d.languages ?? "").split(",").map((s) => s.trim()).filter(Boolean).slice(0, 8),
       slug: p.slug.startsWith("entwurf-") || p.stageName !== d.stageName ? `${slugBase}-${randomSuffix(4)}` : p.slug,
       ...(changed ? reviewIfPublished(p.status) : {}),
     },
   });
+  await writeAttributes({ id: p.id, profileType: d.profileType, categoryId: cat.id }, fd);
   return done(p.id, 1, fd);
 }
 
@@ -94,11 +95,13 @@ export async function saveDescriptionAction(_: ActionState, fd: FormData): Promi
   if (!p) return { ok: false, message: "Sedcard nicht gefunden." };
   const parsed = profileDescriptionSchema.safeParse(Object.fromEntries(fd));
   if (!parsed.success) return zodErrors(parsed.error);
-  const text = checkProfileText(parsed.data.description);
+  const { description, headline } = parsed.data;
+  const text = checkProfileText(`${headline ?? ""} ${description}`);
   if (text.flagged) return { ok: false, message: `Unzulässiger Inhalt: ${text.reasons.join(", ")}. Bitte beachte unsere Richtlinien.` };
+  const changed = description !== p.description || headline !== p.headline;
   await db.profile.update({
     where: { id: p.id },
-    data: { description: parsed.data.description, ...(parsed.data.description !== p.description ? reviewIfPublished(p.status) : {}) },
+    data: { description, headline, ...(changed ? reviewIfPublished(p.status) : {}) },
   });
   return done(p.id, 2, fd);
 }
@@ -110,7 +113,7 @@ export async function saveLocationAction(_: ActionState, fd: FormData): Promise<
   const parsed = profileLocationSchema.safeParse(Object.fromEntries(fd));
   if (!parsed.success) return zodErrors(parsed.error);
   await db.profile.update({ where: { id: p.id }, data: { city: parsed.data.city, postalCode: parsed.data.postalCode ?? null, region: parsed.data.region } });
-  return done(p.id, 5, fd);
+  return done(p.id, 4, fd);
 }
 
 export async function saveContactAction(_: ActionState, fd: FormData): Promise<ActionState> {
@@ -140,7 +143,7 @@ export async function saveContactAction(_: ActionState, fd: FormData): Promise<A
       priceNote: String(fd.get("priceNote") ?? "").trim().slice(0, 300) || null,
     },
   });
-  return done(p.id, 6, fd);
+  return done(p.id, 5, fd);
 }
 
 /** Liest die Preiszeilen (price_label_N, price_in_N, price_out_N). Zeilen ohne Bezeichnung werden ignoriert. */
@@ -159,12 +162,13 @@ function readPrices(fd: FormData): PriceRow[] {
   return rows;
 }
 
-export async function saveAttributesAction(_: ActionState, fd: FormData): Promise<ActionState> {
-  const user = await requireUser();
-  const p = await ownedProfile(String(fd.get("profileId")), user);
-  if (!p) return { ok: false, message: "Sedcard nicht gefunden." };
+/**
+ * Schreibt die Eigenschaften (Formularfelder attr_<key>, bei Duo zusätzlich attr2_<key>) für die Filter der Kategorie.
+ * Eigenschaften, die nicht (mehr) zur Kategorie gehören, werden entfernt.
+ */
+async function writeAttributes(p: { id: string; profileType: string; categoryId: string }, fd: FormData) {
   const filters = await db.filterDefinition.findMany({ where: { active: true, categories: { some: { categoryId: p.categoryId } } }, include: { options: { where: { active: true } } } });
-
+  await db.profileAttribute.deleteMany({ where: { profileId: p.id, filter: { active: true }, filterId: { notIn: filters.map((f) => f.id) } } });
   const duo = p.profileType === "DUO";
   await db.$transaction(async (tx) => {
     // Bei Wechsel von Duo zu Einzel: Angaben der zweiten Person entfernen
@@ -194,7 +198,6 @@ export async function saveAttributesAction(_: ActionState, fd: FormData): Promis
       }
     }
   });
-  return done(p.id, 4, fd);
 }
 
 export async function uploadImagesAction(_: ActionState, fd: FormData): Promise<ActionState> {

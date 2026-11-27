@@ -111,7 +111,7 @@ export async function reviewVerificationAction(fd: FormData) {
   ]);
   // Datenminimierung: Dokumente nach der Entscheidung löschen
   for (const k of [v.documentKey, v.selfieKey]) if (k) await storage().delete(k).catch(() => {});
-  await notify(v.userId, approve ? "Verifizierung erfolgreich" : "Verifizierung abgelehnt", approve ? "Deine Prüfung wurde erfolgreich abgeschlossen." : `Grund: ${note}`, v.profileId ? `/dashboard/sedcards/${v.profileId}?schritt=7` : "/dashboard/verifizierung");
+  await notify(v.userId, approve ? "Verifizierung erfolgreich" : "Verifizierung abgelehnt", approve ? "Deine Prüfung wurde erfolgreich abgeschlossen." : `Grund: ${note}`, v.profileId ? `/dashboard/sedcards/${v.profileId}?schritt=6` : "/dashboard/verifizierung");
   await audit(mod.id, `verification.${approve ? "approve" : "reject"}`, { type: "IdentityVerification", id }, { note });
   revalidatePath("/admin/verifizierungen");
   back(fd, "/admin/verifizierungen");

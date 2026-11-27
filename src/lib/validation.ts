@@ -47,6 +47,7 @@ export const profileBasicsSchema = z.object({
 });
 
 export const profileDescriptionSchema = z.object({
+  headline: optionalText(90),
   description: z.string().trim().min(80, "Die Beschreibung sollte mindestens 80 Zeichen lang sein.").max(5000, "Höchstens 5.000 Zeichen."),
 });
 

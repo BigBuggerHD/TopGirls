@@ -9,7 +9,7 @@ import { PROFILE_STATUS, VERIFICATION_STATUS } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { parsePrices } from "@/lib/prices";
 import { deleteImageAction, deleteProfileAction, getPublishChecklist, pauseProfileAction, setCoverImageAction } from "@/actions/profiles";
-import { AttributesStep, BasicsStep, ContactStep, DescriptionStep, ImagesStep, LocationStep, ModelConsentUpload, SubmitStep } from "@/components/dashboard/sedcard-steps";
+import { ContactStep, ProfileDataStep, DescriptionStep, ImagesStep, LocationStep, ModelConsentUpload, SubmitStep } from "@/components/dashboard/sedcard-steps";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
@@ -17,12 +17,12 @@ import { Gallery } from "@/components/profiles/gallery";
 
 export const metadata = { title: "Sedcard bearbeiten" };
 
-const STEPS = ["Profildaten", "Beschreibung", "Bilder", "Eigenschaften", "Standort", "Kontakt, Zeiten & Preise", "Vorschau & Veröffentlichung"];
+const STEPS = ["Profildaten", "Beschreibung", "Bilder", "Standort", "Kontakt, Zeiten & Preise", "Vorschau & Veröffentlichung"];
 
 export default async function EditSedcardPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ schritt?: string }> }) {
   const user = await requirePermission("profile.own");
   const { id } = await params;
-  const step = Math.min(7, Math.max(1, Number((await searchParams).schritt) || 1));
+  const step = Math.min(6, Math.max(1, Number((await searchParams).schritt) || 1));
   const p = await db.profile.findFirst({
     where: { id, ownerId: user.id },
     include: {
@@ -33,10 +33,10 @@ export default async function EditSedcardPage({ params, searchParams }: { params
   });
   if (!p) notFound();
   const categories = await db.category.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } });
-  const filters = step === 4 || step === 7
+  const filters = step === 1
     ? await db.filterDefinition.findMany({ where: { active: true, categories: { some: { categoryId: p.categoryId } } }, orderBy: { sortOrder: "asc" }, include: { options: { where: { active: true }, orderBy: { sortOrder: "asc" } } } })
     : [];
-  const checklist = step === 7 ? await getPublishChecklist(p.id) : null;
+  const checklist = step === 6 ? await getPublishChecklist(p.id) : null;
 
   return (
     <div>
@@ -80,7 +80,14 @@ export default async function EditSedcardPage({ params, searchParams }: { params
 
       <section className="rounded-xl border border-border bg-surface p-5 sm:p-8">
         <h2 className="mb-6 font-display text-2xl text-white">{STEPS[step - 1]}</h2>
-        {step === 1 && <BasicsStep profile={p} categories={categories} />}
+        {step === 1 && (
+          <ProfileDataStep
+            profile={p}
+            categories={categories}
+            filters={filters.map((f) => ({ id: f.id, key: f.key, label: f.label, type: f.type, unit: f.unit, helpText: f.helpText, minValue: f.minValue, maxValue: f.maxValue, perPerson: f.perPerson, options: f.options.map((o) => ({ id: o.id, label: o.label })) }))}
+            values={p.attributes.map((a) => ({ filterId: a.filterId, person: a.person, numberValue: a.numberValue, boolValue: a.boolValue, optionIds: a.options.map((o) => o.optionId) }))}
+          />
+        )}
         {step === 2 && <DescriptionStep profile={p} />}
         {step === 3 && (
           <ImagesStep
@@ -90,18 +97,9 @@ export default async function EditSedcardPage({ params, searchParams }: { params
             onCover={setCoverImageAction}
           />
         )}
-        {step === 4 && (
-          <AttributesStep
-            profileId={p.id}
-            filters={filters.map((f) => ({ id: f.id, key: f.key, label: f.label, type: f.type, unit: f.unit, helpText: f.helpText, minValue: f.minValue, maxValue: f.maxValue, perPerson: f.perPerson, options: f.options.map((o) => ({ id: o.id, label: o.label })) }))}
-            values={p.attributes.map((a) => ({ filterId: a.filterId, person: a.person, numberValue: a.numberValue, boolValue: a.boolValue, optionIds: a.options.map((o) => o.optionId) }))}
-            duo={p.profileType === "DUO"}
-            names={[p.stageName.split("&")[0]?.trim() ?? p.stageName, p.partnerName ?? ""]}
-          />
-        )}
-        {step === 5 && <LocationStep profile={p} />}
-        {step === 6 && <ContactStep profile={{ ...p, availability: (p.availability ?? {}) as Record<string, { active?: boolean; from?: string; to?: string }>, prices: parsePrices(p.prices) }} />}
-        {step === 7 && checklist && (
+        {step === 4 && <LocationStep profile={p} />}
+        {step === 5 && <ContactStep profile={{ ...p, availability: (p.availability ?? {}) as Record<string, { active?: boolean; from?: string; to?: string }>, prices: parsePrices(p.prices) }} />}
+        {step === 6 && checklist && (
           <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
             <div>
               <p className="mb-3 text-xs uppercase tracking-wider text-subtle">Vorschau</p>
