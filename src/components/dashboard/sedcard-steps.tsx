@@ -104,8 +104,8 @@ export function ProfileDataStep({ profile, categories, filters, values }: { prof
                 <FancySelect name="categoryId" allowEmpty={false} defaultValue={profile.categoryId} onChange={setCategoryId} ariaLabel="Kategorie" options={categories.map((c) => ({ value: c.id, label: c.name }))} />
               </Field>
             </div>
-            <div className="grid gap-5 sm:grid-cols-2">
-              <Field label={duo ? "Sedcard Name" : "Sedcard Name"} name="stageName" errors={s?.errors?.stageName} required hint={duo ? "z. B. „Lara & Mia“ – der erste Name gilt für Person 1. Keine bürgerlichen Namen." : "Verwende keinen bürgerlichen Namen."}>
+            <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-4 sm:grid-cols-[minmax(0,1fr)_10rem] sm:gap-5">
+              <Field label="Sedcard Name" name="stageName" errors={s?.errors?.stageName} required hint={duo ? "z. B. „Lara & Mia“ – der erste Name gilt für Person 1. Keine bürgerlichen Namen." : "Verwende keinen bürgerlichen Namen."}>
                 <Input id="stageName" name="stageName" value={name1} onChange={(e) => setName1(e.target.value)} maxLength={40} />
               </Field>
               <Field label={duo ? "Alter Person 1" : "Alter"} name="age" errors={s?.errors?.age} hint="Mindestens 18.">
@@ -113,7 +113,7 @@ export function ProfileDataStep({ profile, categories, filters, values }: { prof
               </Field>
             </div>
             {duo ? (
-              <div className="grid gap-5 sm:grid-cols-2">
+              <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-4 sm:grid-cols-[minmax(0,1fr)_10rem] sm:gap-5">
                 <Field label="Name Person 2" name="partnerName" errors={s?.errors?.partnerName} hint="Künstlername der zweiten Person.">
                   <Input id="partnerName" name="partnerName" value={name2} onChange={(e) => setName2(e.target.value)} maxLength={40} />
                 </Field>

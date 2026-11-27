@@ -32,7 +32,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="container-page py-8 lg:py-10">
-      <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[240px_minmax(0,1fr)]">
         <aside className="lg:sticky lg:top-24 lg:self-start">
           <div className="mb-4 hidden rounded-xl border border-border bg-surface p-4 lg:block">
             <p className="truncate font-medium text-white">{user.companyName ?? user.displayName}</p>
