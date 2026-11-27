@@ -191,7 +191,8 @@ async function main() {
   }
 
   // ── Profile ──
-  const CITIES = [["Berlin", "10115", "Berlin"], ["Hamburg", "20095", "Hamburg"], ["München", "80331", "Bayern"], ["Köln", "50667", "Nordrhein-Westfalen"], ["Frankfurt am Main", "60311", "Hessen"], ["Düsseldorf", "40213", "Nordrhein-Westfalen"], ["Stuttgart", "70173", "Baden-Württemberg"], ["Leipzig", "04109", "Sachsen"]];
+  const BERLIN_DEMO_DISTRICTS = ["Mitte", "Charlottenburg-Wilmersdorf", "Friedrichshain-Kreuzberg", "Pankow", "Neukölln"];
+const CITIES = [["Berlin", "10115", "Berlin"], ["Hamburg", "20095", "Hamburg"], ["München", "80331", "Bayern"], ["Köln", "50667", "Nordrhein-Westfalen"], ["Frankfurt am Main", "60311", "Hessen"], ["Düsseldorf", "40213", "Nordrhein-Westfalen"], ["Stuttgart", "70173", "Baden-Württemberg"], ["Leipzig", "04109", "Sachsen"]];
   const availability = { mo: { active: true, from: "12:00", to: "22:00" }, di: { active: true, from: "12:00", to: "22:00" }, mi: { active: false }, do: { active: true, from: "14:00", to: "23:00" }, fr: { active: true, from: "14:00", to: "02:00" }, sa: { active: true, from: "16:00", to: "02:00" }, so: { active: false } };
 
   type P = { owner: string; cat: string; name: string; age?: number; headline: string; premium?: boolean; highlight?: boolean; sponsored?: boolean; status?: "PUBLISHED" | "PENDING_REVIEW" | "DRAFT"; attrs?: Record<string, string[] | number | boolean>; langs?: string[]; duo?: { name: string; age: number; attrs: Record<string, string[] | number | boolean> } };
@@ -264,8 +265,11 @@ async function main() {
         ...(p.duo ? { profileType: "DUO", partnerName: p.duo.name, age2: p.duo.age } : {}),
         description: DESCRIPTIONS[p.cat === "clubs" || p.cat === "massagen" ? 2 : i % 2],
         city, postalCode: plz, region, languages: p.langs ?? ["Deutsch"], availability, availabilityNote: "Termine bitte mit mindestens 2 Stunden Vorlauf anfragen.",
-        contactPhone: `+49 30 ${String(5550100 + i).padStart(7, "0")}`, contactWhatsapp: i % 3 === 0 ? `+49 151 ${String(5550100 + i).padStart(7, "0")}` : null,
-        contactEmail: `kontakt${i + 1}@example.com`, contactWebsite: i % 4 === 0 ? "https://example.com" : null,
+        // Fiktive Nummern; Demo-Sedcards gelten als SMS-verifiziert
+        contactPhone: `+4930${String(5550100 + i).padStart(7, "0")}`, phoneVerifiedAt: new Date(),
+        whatsappEnabled: i % 3 === 0, telegramEnabled: i % 5 === 0,
+        district: city === "Berlin" ? BERLIN_DEMO_DISTRICTS[i % BERLIN_DEMO_DISTRICTS.length] : null,
+        allowMessages: false,
         status, verified: published, consentConfirmedAt: new Date(),
         publishedAt: published ? new Date(Date.now() - (i + 1) * DAY * 2) : null,
         expiresAt: published ? daysFromNow(30 - i) : null,

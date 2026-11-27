@@ -42,58 +42,58 @@ enum VerificationStatus {
 }
 
 model User {
-  id                 String             @id @default(cuid())
-  email              String             @unique
-  passwordHash       String
-  role               Role               @default(MEMBER)
-  status             UserStatus         @default(ACTIVE)
-  displayName        String
-  companyName        String?
-  emailVerifiedAt    DateTime?
-  verificationStatus VerificationStatus @default(NONE)
-  suspendedUntil     DateTime?
-  suspensionReason   String?
-  tokenBalance       Int                @default(0)
-  termsAcceptedAt    DateTime?
+  id                   String             @id @default(cuid())
+  email                String             @unique
+  passwordHash         String
+  role                 Role               @default(MEMBER)
+  status               UserStatus         @default(ACTIVE)
+  displayName          String
+  companyName          String?
+  emailVerifiedAt      DateTime?
+  verificationStatus   VerificationStatus @default(NONE)
+  suspendedUntil       DateTime?
+  suspensionReason     String?
+  tokenBalance         Int                @default(0)
+  termsAcceptedAt      DateTime?
   forumRulesAcceptedAt DateTime?
-  lastLoginAt        DateTime?
-  failedLoginCount   Int                @default(0)
-  lockedUntil        DateTime?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
+  lastLoginAt          DateTime?
+  failedLoginCount     Int                @default(0)
+  lockedUntil          DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
 
-  sessions          Session[]
-  authTokens        AuthToken[]
-  profiles          Profile[]
-  verifications     IdentityVerification[] @relation("VerificationUser")
-  reviewedVerifications IdentityVerification[] @relation("VerificationReviewer")
-  transactions      TokenTransaction[]       @relation("TransactionUser")
-  createdTransactions TokenTransaction[]     @relation("TransactionCreator")
-  payments          Payment[]
-  adBookings        AdBooking[]
-  listings          MarketplaceListing[]
-  participations    ConversationParticipant[]
-  messages          Message[]
-  notifications     Notification[]
-  forumThreads      ForumThread[]
-  forumPosts        ForumPost[]
-  reports           Report[]                 @relation("ReportReporter")
-  handledReports    Report[]                 @relation("ReportHandler")
-  auditLogs         AuditLog[]
-  promotions        Promotion[]
+  sessions              Session[]
+  authTokens            AuthToken[]
+  profiles              Profile[]
+  verifications         IdentityVerification[]    @relation("VerificationUser")
+  reviewedVerifications IdentityVerification[]    @relation("VerificationReviewer")
+  transactions          TokenTransaction[]        @relation("TransactionUser")
+  createdTransactions   TokenTransaction[]        @relation("TransactionCreator")
+  payments              Payment[]
+  adBookings            AdBooking[]
+  listings              MarketplaceListing[]
+  participations        ConversationParticipant[]
+  messages              Message[]
+  notifications         Notification[]
+  forumThreads          ForumThread[]
+  forumPosts            ForumPost[]
+  reports               Report[]                  @relation("ReportReporter")
+  handledReports        Report[]                  @relation("ReportHandler")
+  auditLogs             AuditLog[]
+  promotions            Promotion[]
 
   @@index([role])
   @@index([status])
 }
 
 model Session {
-  id         String   @id // SHA-256-Hash des Session-Tokens
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt  DateTime
-  ipHash     String?
-  userAgent  String?
-  createdAt  DateTime @default(now())
+  id        String   @id // SHA-256-Hash des Session-Tokens
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  ipHash    String?
+  userAgent String?
+  createdAt DateTime @default(now())
 
   @@index([userId])
 }
@@ -124,22 +124,22 @@ enum VerificationDocType {
 }
 
 model IdentityVerification {
-  id           String              @id @default(cuid())
-  userId       String
-  user         User                @relation("VerificationUser", fields: [userId], references: [id], onDelete: Cascade)
-  profileId    String?
-  profile      Profile?            @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  docType      VerificationDocType
+  id          String              @id @default(cuid())
+  userId      String
+  user        User                @relation("VerificationUser", fields: [userId], references: [id], onDelete: Cascade)
+  profileId   String?
+  profile     Profile?            @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  docType     VerificationDocType
   // Privater Speicherschlüssel – wird nach der Prüfung gelöscht (Datenminimierung)
-  documentKey  String?
-  selfieKey    String?
-  birthYear    Int?
-  status       VerificationStatus  @default(PENDING)
-  reviewerId   String?
-  reviewer     User?               @relation("VerificationReviewer", fields: [reviewerId], references: [id])
-  reviewNote   String?
-  reviewedAt   DateTime?
-  createdAt    DateTime            @default(now())
+  documentKey String?
+  selfieKey   String?
+  birthYear   Int?
+  status      VerificationStatus  @default(PENDING)
+  reviewerId  String?
+  reviewer    User?               @relation("VerificationReviewer", fields: [reviewerId], references: [id])
+  reviewNote  String?
+  reviewedAt  DateTime?
+  createdAt   DateTime            @default(now())
 
   @@index([status])
   @@index([userId])
@@ -170,20 +170,20 @@ enum FilterType {
 }
 
 model FilterDefinition {
-  id          String     @id @default(cuid())
-  key         String     @unique
-  label       String
-  type        FilterType
-  unit        String?
-  helpText    String?
-  sortOrder   Int        @default(0)
-  active      Boolean    @default(true)
-  showInSearch Boolean   @default(true)
-  perPerson   Boolean    @default(false) // bei Duo-Profilen für jede Person getrennt
-  minValue    Int?
-  maxValue    Int?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id           String     @id @default(cuid())
+  key          String     @unique
+  label        String
+  type         FilterType
+  unit         String?
+  helpText     String?
+  sortOrder    Int        @default(0)
+  active       Boolean    @default(true)
+  showInSearch Boolean    @default(true)
+  perPerson    Boolean    @default(false) // bei Duo-Profilen für jede Person getrennt
+  minValue     Int?
+  maxValue     Int?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
   options    FilterOption[]
   categories FilterCategory[]
@@ -228,54 +228,62 @@ enum ProfileStatus {
 }
 
 model Profile {
-  id               String        @id @default(cuid())
-  slug             String        @unique
-  ownerId          String
-  owner            User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  categoryId       String
-  category         Category      @relation(fields: [categoryId], references: [id])
-  stageName        String
-  headline         String?
-  description      String        @default("")
-  city             String        @default("")
-  postalCode       String?
-  region           String?
-  profileType      String        @default("SINGLE") // SINGLE = Einzel, DUO = Duo (zwei Personen)
-  age              Int? // angegebenes Alter (>= 18, serverseitig geprüft)
-  partnerName      String? // Duo: Name der zweiten Person
-  age2             Int? // Duo: Alter der zweiten Person (>= 18)
-  languages        String[]      @default([])
-  availability     Json? // { mo: {from,to,active}, ... }
-  availabilityNote String?
-  prices           Json? // [{ label: "1 Stunde", amountCents: 20000 }, …]
-  priceNote        String?
-  contactPhone     String?
-  contactWhatsapp  String?
-  contactEmail     String?
-  contactWebsite   String?
-  showPhone        Boolean       @default(true)
-  allowMessages    Boolean       @default(true)
-  status           ProfileStatus @default(DRAFT)
-  rejectionReason  String?
+  id                 String        @id @default(cuid())
+  slug               String        @unique
+  ownerId            String
+  owner              User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  categoryId         String
+  category           Category      @relation(fields: [categoryId], references: [id])
+  stageName          String
+  headline           String?
+  description        String        @default("")
+  city               String        @default("")
+  postalCode         String?
+  region             String?
+  profileType        String        @default("SINGLE") // SINGLE = Einzel, DUO = Duo (zwei Personen)
+  age                Int? // angegebenes Alter (>= 18, serverseitig geprüft)
+  partnerName        String? // Duo: Name der zweiten Person
+  age2               Int? // Duo: Alter der zweiten Person (>= 18)
+  languages          String[]      @default([])
+  availability       Json? // { mo: {from,to,active}, ... }
+  availabilityNote   String?
+  prices             Json? // [{ label: "1 Stunde", amountCents: 20000 }, …]
+  priceNote          String?
+  contactPhone       String? // E.164, z. B. +4915112345678
+  phoneVerifiedAt    DateTime? // SMS-Bestätigung; wird bei Änderung der Nummer zurückgesetzt
+  whatsappEnabled    Boolean       @default(false) // erreichbar per WhatsApp (gleiche Nummer)
+  telegramEnabled    Boolean       @default(false) // erreichbar per Telegram (gleiche Nummer)
+  street             String?
+  houseNumber        String?
+  district           String? // Bezirk
+  showAddress        Boolean       @default(false) // false = öffentlich nur Bezirk + Stadt
+  contactWhatsapp    String? // veraltet (früher eigene WhatsApp-Nummer)
+  contactEmail       String? // veraltet, wird nicht mehr abgefragt/angezeigt
+  contactWebsite     String? // veraltet, wird nicht mehr abgefragt/angezeigt
+  showPhone          Boolean       @default(true) // veraltet
+  allowMessages      Boolean       @default(false) // Nachrichten über die Website sind deaktiviert
+  status             ProfileStatus @default(DRAFT)
+  rejectionReason    String?
   consentConfirmedAt DateTime? // Bestätigung: volljährig, freiwillig, Bildrechte
-  verified         Boolean       @default(false)
+  verified           Boolean       @default(false)
   // Denormalisierte Laufzeiten aktiver Promotions (für performante Sortierung)
-  premiumUntil     DateTime?
-  highlightUntil   DateTime?
-  sponsoredUntil   DateTime?
-  publishedAt      DateTime?
-  expiresAt        DateTime?
-  submittedAt      DateTime?
-  reviewedAt       DateTime?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  premiumUntil       DateTime?
+  highlightUntil     DateTime?
+  sponsoredUntil     DateTime?
+  publishedAt        DateTime?
+  expiresAt          DateTime?
+  submittedAt        DateTime?
+  reviewedAt         DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
 
-  images        ProfileImage[]
-  attributes    ProfileAttribute[]
-  stats         ProfileStatDaily[]
-  promotions    Promotion[]
-  adBookings    AdBooking[]
-  verifications IdentityVerification[]
+  images             ProfileImage[]
+  attributes         ProfileAttribute[]
+  stats              ProfileStatDaily[]
+  promotions         Promotion[]
+  adBookings         AdBooking[]
+  verifications      IdentityVerification[]
+  phoneVerifications PhoneVerification[]
 
   @@index([status, categoryId])
   @@index([city])
@@ -290,19 +298,19 @@ enum ImageStatus {
 }
 
 model ProfileImage {
-  id          String      @id @default(cuid())
-  profileId   String
-  profile     Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  storageKey  String      @unique
-  thumbKey    String
-  width       Int
-  height      Int
-  sha256      String
-  status      ImageStatus @default(PENDING)
+  id           String      @id @default(cuid())
+  profileId    String
+  profile      Profile     @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  storageKey   String      @unique
+  thumbKey     String
+  width        Int
+  height       Int
+  sha256       String
+  status       ImageStatus @default(PENDING)
   rejectReason String?
-  isCover     Boolean     @default(false)
-  sortOrder   Int         @default(0)
-  createdAt   DateTime    @default(now())
+  isCover      Boolean     @default(false)
+  sortOrder    Int         @default(0)
+  createdAt    DateTime    @default(now())
 
   @@index([profileId, status])
   @@index([sha256])
@@ -369,19 +377,19 @@ model PremiumProduct {
 }
 
 model Promotion {
-  id         String        @id @default(cuid())
-  profileId  String
-  profile    Profile       @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  userId     String
-  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type       PromotionType
-  startsAt   DateTime
-  endsAt     DateTime
-  tokenCost  Int
-  priority   Int           @default(0)
-  transactionId String?    @unique
-  transaction TokenTransaction? @relation(fields: [transactionId], references: [id])
-  createdAt  DateTime      @default(now())
+  id            String            @id @default(cuid())
+  profileId     String
+  profile       Profile           @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          PromotionType
+  startsAt      DateTime
+  endsAt        DateTime
+  tokenCost     Int
+  priority      Int               @default(0)
+  transactionId String?           @unique
+  transaction   TokenTransaction? @relation(fields: [transactionId], references: [id])
+  createdAt     DateTime          @default(now())
 
   @@index([type, endsAt])
   @@index([profileId])
@@ -424,13 +432,13 @@ enum AdBookingStatus {
 }
 
 model AdBooking {
-  id            String          @id @default(cuid())
+  id            String            @id @default(cuid())
   placementId   String
-  placement     AdPlacement     @relation(fields: [placementId], references: [id])
+  placement     AdPlacement       @relation(fields: [placementId], references: [id])
   userId        String
-  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   profileId     String?
-  profile       Profile?        @relation(fields: [profileId], references: [id], onDelete: SetNull)
+  profile       Profile?          @relation(fields: [profileId], references: [id], onDelete: SetNull)
   title         String
   subtitle      String?
   imageKey      String?
@@ -439,15 +447,15 @@ model AdBooking {
   endsAt        DateTime
   days          Int
   tokenCost     Int
-  priority      Int             @default(0)
-  status        AdBookingStatus @default(PENDING_REVIEW)
+  priority      Int               @default(0)
+  status        AdBookingStatus   @default(PENDING_REVIEW)
   rejectReason  String?
-  impressions   Int             @default(0)
-  clicks        Int             @default(0)
-  transactionId String?         @unique
+  impressions   Int               @default(0)
+  clicks        Int               @default(0)
+  transactionId String?           @unique
   transaction   TokenTransaction? @relation(fields: [transactionId], references: [id])
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
   @@index([placementId, status, startsAt, endsAt])
 }
@@ -570,12 +578,12 @@ model WebhookEvent {
 // ─────────────────────────────────────────────────────────────
 
 model MarketplaceCategory {
-  id          String   @id @default(cuid())
-  slug        String   @unique
+  id          String  @id @default(cuid())
+  slug        String  @unique
   name        String
   description String?
-  sortOrder   Int      @default(0)
-  active      Boolean  @default(true)
+  sortOrder   Int     @default(0)
+  active      Boolean @default(true)
 
   listings MarketplaceListing[]
 }
@@ -590,24 +598,24 @@ enum ListingStatus {
 }
 
 model MarketplaceListing {
-  id           String              @id @default(cuid())
-  ownerId      String
-  owner        User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  categoryId   String
-  category     MarketplaceCategory @relation(fields: [categoryId], references: [id])
-  title        String
-  description  String
-  city         String
-  priceCents   Int?
-  priceUnit    String? // z. B. "pro Woche", "pro Monat"
-  contactEmail String?
-  contactPhone String?
-  status       ListingStatus       @default(PENDING_REVIEW)
+  id             String              @id @default(cuid())
+  ownerId        String
+  owner          User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  categoryId     String
+  category       MarketplaceCategory @relation(fields: [categoryId], references: [id])
+  title          String
+  description    String
+  city           String
+  priceCents     Int?
+  priceUnit      String? // z. B. "pro Woche", "pro Monat"
+  contactEmail   String?
+  contactPhone   String?
+  status         ListingStatus       @default(PENDING_REVIEW)
   moderationNote String?
-  publishedAt  DateTime?
-  expiresAt    DateTime?
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
+  publishedAt    DateTime?
+  expiresAt      DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
 
   @@index([status, categoryId])
 }
@@ -671,12 +679,12 @@ model Notification {
 // ─────────────────────────────────────────────────────────────
 
 model ForumCategory {
-  id          String   @id @default(cuid())
-  slug        String   @unique
+  id          String  @id @default(cuid())
+  slug        String  @unique
   name        String
   description String?
-  sortOrder   Int      @default(0)
-  active      Boolean  @default(true)
+  sortOrder   Int     @default(0)
+  active      Boolean @default(true)
 
   threads ForumThread[]
 }
@@ -707,16 +715,16 @@ model ForumThread {
 }
 
 model ForumPost {
-  id        String        @id @default(cuid())
-  threadId  String
-  thread    ForumThread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  authorId  String
-  author    User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  body      String
-  status    ContentStatus @default(VISIBLE)
+  id         String        @id @default(cuid())
+  threadId   String
+  thread     ForumThread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  body       String
+  status     ContentStatus @default(VISIBLE)
   flagReason String?
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
 
   @@index([threadId, createdAt])
 }
@@ -757,21 +765,21 @@ enum ReportStatus {
 }
 
 model Report {
-  id           String       @id @default(cuid())
-  reporterId   String?
-  reporter     User?        @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: SetNull)
+  id            String       @id @default(cuid())
+  reporterId    String?
+  reporter      User?        @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: SetNull)
   reporterEmail String?
-  targetType   ReportTarget
-  targetId     String
-  reason       ReportReason
-  details      String
-  priority     Int          @default(0) // höher = dringender
-  status       ReportStatus @default(OPEN)
-  handlerId    String?
-  handler      User?        @relation("ReportHandler", fields: [handlerId], references: [id], onDelete: SetNull)
-  resolution   String?
-  resolvedAt   DateTime?
-  createdAt    DateTime     @default(now())
+  targetType    ReportTarget
+  targetId      String
+  reason        ReportReason
+  details       String
+  priority      Int          @default(0) // höher = dringender
+  status        ReportStatus @default(OPEN)
+  handlerId     String?
+  handler       User?        @relation("ReportHandler", fields: [handlerId], references: [id], onDelete: SetNull)
+  resolution    String?
+  resolvedAt    DateTime?
+  createdAt     DateTime     @default(now())
 
   @@index([status, priority])
   @@index([targetType, targetId])
@@ -797,4 +805,18 @@ model Setting {
   key       String   @id
   value     Json
   updatedAt DateTime @updatedAt
+}
+
+/// SMS-Bestätigungscodes für Telefonnummern von Sedcards (nur Hash gespeichert)
+model PhoneVerification {
+  id        String   @id @default(cuid())
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  phone     String
+  codeHash  String
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([profileId])
 }

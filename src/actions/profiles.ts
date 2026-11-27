@@ -12,6 +12,11 @@ import { checkProfileText } from "@/lib/content-filter";
 import { processAndStoreImage, storePrivateDocument, UploadError } from "@/lib/storage/images";
 import { storage } from "@/lib/storage";
 import { rateLimit } from "@/lib/rate-limit";
+import { hmacSha256Hex, safeEqual } from "@/lib/crypto";
+import { env } from "@/lib/env";
+import { normalizePhone } from "@/lib/phone";
+import { sendSms, smsDevMode, SmsNotConfiguredError } from "@/lib/sms";
+import { randomInt } from "node:crypto";
 import { audit } from "@/lib/audit";
 import { PERSON_CATEGORIES, requiresModelConsent } from "@/lib/model-consent";
 import { WIZARD_HIDDEN_FILTER_KEYS } from "@/lib/meeting";
@@ -20,7 +25,7 @@ import { MAX_PRICE_ROWS, type PriceRow } from "@/lib/prices";
 import type { Availability } from "@/lib/availability";
 import {
   parseEuroToCents,
-  profileBasicsSchema, profileContactSchema, profileDescriptionSchema, profileLocationSchema, zodErrors, type ActionState,
+  profileBasicsSchema, profileContactDataSchema, profileDescriptionSchema, zodErrors, type ActionState,
 } from "@/lib/validation";
 
 
@@ -105,26 +110,98 @@ export async function saveDescriptionAction(_: ActionState, fd: FormData): Promi
     where: { id: p.id },
     data: { description, headline, ...(changed ? reviewIfPublished(p.status) : {}) },
   });
+  return done(p.id, 3, fd);
+}
+
+/** Schritt 2 „Kontaktdaten“: Telefonnummer, Messenger, Adresse. */
+export async function saveContactDataAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  const user = await requireUser();
+  const p = await ownedProfile(String(fd.get("profileId")), user);
+  if (!p) return { ok: false, message: "Sedcard nicht gefunden." };
+  const parsed = profileContactDataSchema.safeParse(Object.fromEntries(fd));
+  if (!parsed.success) return zodErrors(parsed.error);
+  const d = parsed.data;
+  const phone = d.contactPhone ? normalizePhone(d.contactPhone) : null;
+  if (d.contactPhone && !phone) return { ok: false, message: "Bitte prüfe deine Eingaben.", errors: { contactPhone: ["Ungültige Telefonnummer, z. B. 0151 1234567 oder +49 151 1234567."] } };
+  const showAddress = d.showAddress === "on";
+  if (showAddress && (!d.street || !d.houseNumber)) {
+    return { ok: false, message: "Bitte prüfe deine Eingaben.", errors: { street: d.street ? [] : ["Für die Anzeige der Adresse bitte Straße angeben."], houseNumber: d.houseNumber ? [] : ["Bitte Hausnr. angeben."] } };
+  }
+  const text = checkProfileText(`${d.street ?? ""} ${d.district ?? ""} ${d.city}`);
+  if (text.flagged) return { ok: false, message: `Unzulässiger Inhalt: ${text.reasons.join(", ")}.` };
+  await db.profile.update({
+    where: { id: p.id },
+    data: {
+      contactPhone: phone,
+      // Neue oder geänderte Nummer muss erneut per SMS bestätigt werden
+      ...(phone !== p.contactPhone ? { phoneVerifiedAt: null } : {}),
+      whatsappEnabled: d.whatsappEnabled === "on", telegramEnabled: d.telegramEnabled === "on",
+      street: d.street, houseNumber: d.houseNumber ?? null, postalCode: d.postalCode ?? null,
+      city: d.city, district: d.district, showAddress,
+    },
+  });
   return done(p.id, 2, fd);
 }
 
-export async function saveLocationAction(_: ActionState, fd: FormData): Promise<ActionState> {
+const SMS_CODE_TTL_MS = 10 * 60_000;
+const SMS_MAX_ATTEMPTS = 5;
+const codeHash = (profileId: string, phone: string, code: string) => hmacSha256Hex(env.sessionSecret, `sms:${profileId}:${phone}:${code}`);
+
+export type PhoneCodeState = { ok: boolean; message: string; devCode?: string; phone?: string; verified?: boolean };
+
+/** Sendet einen 6-stelligen Bestätigungscode per SMS an die angegebene Nummer. */
+export async function sendPhoneCodeAction(profileId: string, rawPhone: string): Promise<PhoneCodeState> {
   const user = await requireUser();
-  const p = await ownedProfile(String(fd.get("profileId")), user);
+  const p = await ownedProfile(profileId, user);
   if (!p) return { ok: false, message: "Sedcard nicht gefunden." };
-  const parsed = profileLocationSchema.safeParse(Object.fromEntries(fd));
-  if (!parsed.success) return zodErrors(parsed.error);
-  await db.profile.update({ where: { id: p.id }, data: { city: parsed.data.city, postalCode: parsed.data.postalCode ?? null, region: parsed.data.region } });
-  return done(p.id, 4, fd);
+  const phone = normalizePhone(rawPhone);
+  if (!phone) return { ok: false, message: "Ungültige Telefonnummer, z. B. 0151 1234567 oder +49 151 1234567." };
+  if (phone === p.contactPhone && p.phoneVerifiedAt) return { ok: true, verified: true, phone, message: "Diese Nummer ist bereits verifiziert." };
+  if (!rateLimit(`sms:wait:${p.id}`, 1, 60_000).ok) return { ok: false, message: "Bitte warte eine Minute, bevor du einen neuen Code anforderst." };
+  if (!rateLimit(`sms:profile:${p.id}`, 5, 60 * 60_000).ok || !rateLimit(`sms:user:${user.id}`, 10, 60 * 60_000).ok) {
+    return { ok: false, message: "Zu viele Codes angefordert. Bitte versuche es später erneut." };
+  }
+  const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
+  await db.phoneVerification.deleteMany({ where: { profileId: p.id } });
+  await db.phoneVerification.create({ data: { profileId: p.id, phone, codeHash: codeHash(p.id, phone, code), expiresAt: new Date(Date.now() + SMS_CODE_TTL_MS) } });
+  try {
+    await sendSms(phone, `Dein Top Girls Bestätigungscode: ${code}. Gültig für 10 Minuten. Gib ihn niemals weiter.`);
+  } catch (e) {
+    await db.phoneVerification.deleteMany({ where: { profileId: p.id } });
+    return { ok: false, message: e instanceof SmsNotConfiguredError ? e.message : "Die SMS konnte nicht gesendet werden. Bitte versuche es später erneut." };
+  }
+  await audit(user.id, "profile.phone.code", { type: "Profile", id: p.id });
+  return { ok: true, phone, message: "Code gesendet. Bitte gib den 6-stelligen Code aus der SMS ein.", ...(smsDevMode() ? { devCode: code } : {}) };
 }
 
-export async function saveContactAction(_: ActionState, fd: FormData): Promise<ActionState> {
+/** Prüft den SMS-Code und speichert die Nummer als verifiziert. */
+export async function verifyPhoneCodeAction(profileId: string, rawCode: string): Promise<PhoneCodeState> {
+  const user = await requireUser();
+  const p = await ownedProfile(profileId, user);
+  if (!p) return { ok: false, message: "Sedcard nicht gefunden." };
+  const code = rawCode.replace(/\D/g, "");
+  if (code.length !== 6) return { ok: false, message: "Bitte gib den 6-stelligen Code ein." };
+  const v = await db.phoneVerification.findFirst({ where: { profileId: p.id }, orderBy: { createdAt: "desc" } });
+  if (!v || v.expiresAt < new Date()) return { ok: false, message: "Der Code ist abgelaufen. Bitte fordere einen neuen an." };
+  if (v.attempts >= SMS_MAX_ATTEMPTS) return { ok: false, message: "Zu viele Fehlversuche. Bitte fordere einen neuen Code an." };
+  if (!safeEqual(v.codeHash, codeHash(p.id, v.phone, code))) {
+    await db.phoneVerification.update({ where: { id: v.id }, data: { attempts: { increment: 1 } } });
+    return { ok: false, message: "Der Code ist falsch." };
+  }
+  await db.$transaction([
+    db.profile.update({ where: { id: p.id }, data: { contactPhone: v.phone, phoneVerifiedAt: new Date() } }),
+    db.phoneVerification.deleteMany({ where: { profileId: p.id } }),
+  ]);
+  await audit(user.id, "profile.phone.verified", { type: "Profile", id: p.id });
+  revalidatePath(`/dashboard/sedcards/${p.id}`);
+  return { ok: true, verified: true, phone: v.phone, message: "Telefonnummer verifiziert." };
+}
+
+/** Schritt 5 „Zeiten & Preise“. */
+export async function saveTimesPricesAction(_: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser();
   const p = await ownedProfile(String(fd.get("profileId")), user);
   if (!p) return { ok: false, message: "Sedcard nicht gefunden." };
-  const parsed = profileContactSchema.safeParse(Object.fromEntries(fd));
-  if (!parsed.success) return zodErrors(parsed.error);
-  const d = parsed.data;
   const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/;
   const availability: Availability = {};
   for (const [k] of WEEKDAYS) {
@@ -138,9 +215,7 @@ export async function saveContactAction(_: ActionState, fd: FormData): Promise<A
   await db.profile.update({
     where: { id: p.id },
     data: {
-      contactPhone: d.contactPhone ?? null, contactWhatsapp: d.contactWhatsapp ?? null, contactEmail: d.contactEmail ?? null,
-      contactWebsite: d.contactWebsite ?? null, showPhone: d.showPhone === "on", allowMessages: d.allowMessages === "on",
-      availabilityNote: d.availabilityNote, availability,
+      availability,
       prices: readPrices(fd),
       priceNote: String(fd.get("priceNote") ?? "").trim().slice(0, 300) || null,
     },
@@ -293,8 +368,8 @@ export async function getPublishChecklist(profileId: string) {
     { ok: p.stageName !== "Neue Sedcard" && p.stageName.length >= 2, label: "Profildaten ausgefüllt" },
     { ok: p.description.length >= 80, label: "Beschreibung (mind. 80 Zeichen)" },
     { ok: p.images.length > 0, label: "Mindestens ein Bild hochgeladen" },
-    { ok: p.city.length >= 2, label: "Standort festgelegt" },
-    { ok: !!(p.contactPhone || p.contactEmail || p.contactWebsite || p.allowMessages), label: "Mindestens eine Kontaktmöglichkeit" },
+    { ok: !!(p.contactPhone && p.phoneVerifiedAt), label: "Telefonnummer per SMS verifiziert", link: "?schritt=2" },
+    { ok: p.city.length >= 2, label: "Stadt angegeben", link: "?schritt=2" },
     { ok: !!p.owner.emailVerifiedAt, label: "E-Mail-Adresse bestätigt" },
     ...(settings.requireVerificationForPublish ? [{ ok: p.owner.verificationStatus === "APPROVED", label: "Identitäts- und Altersprüfung des Kontos abgeschlossen", link: "/dashboard/verifizierung" }] : []),
     ...(needsModelConsent ? [{ ok: ["PENDING", "APPROVED"].includes(p.verifications[0]?.status ?? ""), label: "Einwilligung & Altersnachweis der dargestellten Person hochgeladen" }] : []),

@@ -51,21 +51,18 @@ export const profileDescriptionSchema = z.object({
   description: z.string().trim().min(80, "Die Beschreibung sollte mindestens 80 Zeichen lang sein.").max(5000, "Höchstens 5.000 Zeichen."),
 });
 
-export const profileLocationSchema = z.object({
-  city: trimmed(2, 80, "Bitte gib eine Stadt an."),
-  postalCode: z.string().trim().regex(/^\d{5}$/, "Bitte gib eine gültige fünfstellige Postleitzahl an.").optional().or(z.literal("").transform(() => undefined)),
-  region: optionalText(80),
-});
-
 const phoneRe = /^\+?[0-9 ()/-]{6,25}$/;
-export const profileContactSchema = z.object({
-  contactPhone: z.string().trim().regex(phoneRe, "Ungültige Telefonnummer.").optional().or(z.literal("").transform(() => undefined)),
-  contactWhatsapp: z.string().trim().regex(phoneRe, "Ungültige WhatsApp-Nummer.").optional().or(z.literal("").transform(() => undefined)),
-  contactEmail: z.string().trim().email("Ungültige E-Mail-Adresse.").optional().or(z.literal("").transform(() => undefined)),
-  contactWebsite: z.string().trim().url("Ungültige Website (mit https://).").refine((u) => u.startsWith("https://") || u.startsWith("http://"), "Nur http(s)-Links.").optional().or(z.literal("").transform(() => undefined)),
-  showPhone: z.literal("on").optional(),
-  allowMessages: z.literal("on").optional(),
-  availabilityNote: optionalText(300),
+/** Schritt 2 „Kontaktdaten“: Telefonnummer, Messenger, Adresse. */
+export const profileContactDataSchema = z.object({
+  contactPhone: z.string().trim().max(30).optional(),
+  whatsappEnabled: z.literal("on").optional(),
+  telegramEnabled: z.literal("on").optional(),
+  street: optionalText(80),
+  houseNumber: z.string().trim().max(10, "Höchstens 10 Zeichen.").regex(/^[0-9A-Za-z /-]*$/, "Ungültige Hausnummer.").optional().transform((v) => v || undefined),
+  postalCode: z.string().trim().regex(/^\d{5}$/, "Bitte gib eine gültige fünfstellige Postleitzahl an.").optional().or(z.literal("").transform(() => undefined)),
+  city: trimmed(2, 80, "Bitte gib eine Stadt an."),
+  district: optionalText(80),
+  showAddress: z.literal("on").optional(),
 });
 
 export const listingSchema = z.object({

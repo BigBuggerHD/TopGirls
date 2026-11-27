@@ -14,11 +14,14 @@
 | Zugriffskontrolle | RBAC (`src/lib/rbac.ts`) in allen Layouts, Actions und APIs; Eigentumsprüfung bei allen Objekten |
 | Protokollierung | Audit-Log für Anmeldungen, Moderations- und Admin-Aktionen, Token-Buchungen, Datenexporte (IP nur als gekürzter, gesalzener Hash) |
 | DSGVO | Datenexport (Art. 15/20), Kontolöschung mit Anonymisierung (Art. 17), Löschung von Ausweisdokumenten nach Prüfung, nur technisch notwendige Cookies, aggregierte Statistiken |
+| Telefonnummern | Bestätigung per 6-stelligem SMS-Code (10 Min. gültig, max. 5 Versuche, nur HMAC-Hash gespeichert; 1 Code/Minute, 5/Stunde je Sedcard). Öffentlich nur bestätigte Nummern; bei Änderung neue Bestätigung nötig |
+| Adresse | Straße/Hausnr. nur öffentlich bei „Adresse anzeigen“, sonst nur Bezirk + Stadt |
 | Missbrauchsschutz | ID-/Altersprüfung, Einwilligungsnachweise, Meldeverfahren mit Priorität und Sofortdeaktivierung, Bild-Hash-Sperrliste, Inhaltsfilter, Blockieren in Nachrichten |
 
 ## Für den Produktivbetrieb
 
 - Alle Secrets neu erzeugen; `PAYMENT_SANDBOX=false`.
+- SMS-Anbieter in `src/lib/sms.ts` anbinden (bis dahin ist der SMS-Versand in Produktion deaktiviert).
 - Rate Limiting auf Redis umstellen, `/api/cron` regelmäßig aufrufen (`CRON_SECRET`).
 - S3-Bucket privat, serverseitige Verschlüsselung, Lifecycle für `private/`.
 - Backups, Monitoring, Penetrationstest, nonce-basierte CSP.

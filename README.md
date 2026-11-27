@@ -89,6 +89,10 @@ npm run typecheck    # TypeScript
 
 End-to-End-Smoke-Test (Playwright): siehe [`docs/TESTS.md`](docs/TESTS.md).
 
+## SMS-Bestätigung testen
+
+Ein SMS-Anbieter ist noch nicht angebunden. Lokal (`npm run dev`) erscheint der Bestätigungscode im Terminal und zusätzlich als Hinweis im Sedcard-Assistenten (Schritt 2 „Kontaktdaten“).
+
 ## Sandbox-Zahlung testen
 
 1. Als `agentur@topgirls.local` anmelden → **Token-Guthaben**

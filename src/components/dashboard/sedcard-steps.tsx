@@ -1,9 +1,11 @@
 "use client";
 import Image from "next/image";
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
+import { BadgeCheck, CircleAlert } from "lucide-react";
 import {
-  saveProfileDataAction, saveContactAction, saveDescriptionAction, saveLocationAction,
-  submitForReviewAction, uploadImagesAction, uploadModelConsentAction,
+  saveProfileDataAction, saveContactDataAction, saveDescriptionAction, saveTimesPricesAction,
+  sendPhoneCodeAction, verifyPhoneCodeAction, submitForReviewAction, uploadImagesAction, uploadModelConsentAction,
+  type PhoneCodeState,
 } from "@/actions/profiles";
 import { Field, FormMessage, SubmitButton } from "@/components/ui/form";
 import { Checkbox, Input, Select, Textarea } from "@/components/ui/input";
@@ -13,6 +15,10 @@ import type { PriceRow } from "@/lib/prices";
 import type { Availability } from "@/lib/availability";
 import { AvailabilityEditor, PriceEditor } from "./availability-price-editors";
 import { FancySelect } from "@/components/ui/fancy-select";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { formatPhone, normalizePhone } from "@/lib/phone";
+import { districtsForCity } from "@/lib/districts";
 
 type Action = (s: ActionState, fd: FormData) => Promise<ActionState>;
 
@@ -225,21 +231,118 @@ type FilterDef = { id: string; key: string; label: string; type: "SELECT" | "MUL
 type AttrValue = { filterId: string; person: number; numberValue: number | null; boolValue: boolean | null; optionIds: string[] };
 
 
-export function LocationStep({ profile }: { profile: { id: string; city: string; postalCode: string | null; region: string | null } }) {
+type ContactDataProfile = {
+  id: string; contactPhone: string | null; phoneVerified: boolean; whatsappEnabled: boolean; telegramEnabled: boolean;
+  street: string | null; houseNumber: string | null; postalCode: string | null; city: string; district: string | null; showAddress: boolean;
+};
+
+/** Schritt 2 „Kontaktdaten“: Telefonnummer (SMS-Bestätigung), Messenger, Adresse. */
+export function ContactDataStep({ profile }: { profile: ContactDataProfile }) {
+  const [phone, setPhone] = useState(profile.contactPhone ? formatPhone(profile.contactPhone) : "");
+  const [verifiedPhone, setVerifiedPhone] = useState(profile.phoneVerified ? profile.contactPhone : null);
+  const [codeSent, setCodeSent] = useState(false);
+  const [code, setCode] = useState("");
+  const [sms, setSms] = useState<PhoneCodeState | null>(null);
+  const [pending, startTransition] = useTransition();
+  const [city, setCity] = useState(profile.city);
+  const [district, setDistrict] = useState(profile.district ?? "");
+  const [showAddress, setShowAddress] = useState(profile.showAddress);
+  const verified = !!verifiedPhone && normalizePhone(phone) === verifiedPhone;
+  const districts = districtsForCity(city);
+
+  const sendCode = () => startTransition(async () => {
+    const r = await sendPhoneCodeAction(profile.id, phone);
+    setSms(r);
+    if (r.verified && r.phone) setVerifiedPhone(r.phone);
+    else if (r.ok) { setCodeSent(true); setCode(""); }
+  });
+  const verifyCode = () => startTransition(async () => {
+    const r = await verifyPhoneCodeAction(profile.id, code);
+    setSms(r);
+    if (r.verified && r.phone) { setVerifiedPhone(r.phone); setCodeSent(false); setPhone(formatPhone(r.phone)); }
+  });
+
   return (
-    <StepForm action={saveLocationAction} profileId={profile.id}>
+    <StepForm action={saveContactDataAction} profileId={profile.id}>
       {(s) => (
-        <div className="grid gap-5 sm:grid-cols-3">
-          <Field label="Stadt" name="city" errors={s?.errors?.city} required>
-            <Input id="city" name="city" defaultValue={profile.city} />
-          </Field>
-          <Field label="Postleitzahl" name="postalCode" errors={s?.errors?.postalCode}>
-            <Input id="postalCode" name="postalCode" defaultValue={profile.postalCode ?? ""} inputMode="numeric" maxLength={5} />
-          </Field>
-          <Field label="Bundesland / Region" name="region" errors={s?.errors?.region}>
-            <Input id="region" name="region" defaultValue={profile.region ?? ""} />
-          </Field>
-          <p className="text-xs text-subtle sm:col-span-3">Gib aus Sicherheitsgründen keine genaue Wohnadresse an. Die Stadt genügt für die Suche.</p>
+        <div className="space-y-8">
+          {/* Telefonnummer */}
+          <div className="space-y-3">
+            <Field label="Telefonnummer" name="contactPhone" errors={s?.errors?.contactPhone} required hint="Wird per SMS-Code bestätigt. Pflicht für die Veröffentlichung.">
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Input id="contactPhone" name="contactPhone" type="tel" autoComplete="tel" placeholder="z. B. 0151 1234567" value={phone}
+                  onChange={(e) => { setPhone(e.target.value); setCodeSent(false); setSms(null); }} className="sm:max-w-xs" />
+                {!verified ? (
+                  <Button type="button" variant="outline" onClick={sendCode} disabled={pending || !phone.trim()}>{codeSent ? "Code erneut senden" : "Code per SMS senden"}</Button>
+                ) : null}
+              </div>
+            </Field>
+            <p className={verified ? "flex items-center gap-1.5 text-sm text-success" : "flex items-center gap-1.5 text-sm text-warning"}>
+              {verified ? <BadgeCheck className="size-4" /> : <CircleAlert className="size-4" />}
+              {verified ? "Telefonnummer verifiziert" : "Telefonnummer noch nicht verifiziert"}
+            </p>
+            {codeSent && !verified ? (
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <div className="space-y-1.5">
+                  <label htmlFor="smsCode" className="text-sm font-medium text-foreground">SMS-Code</label>
+                  <Input id="smsCode" inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="6-stelliger Code" value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); verifyCode(); } }} className="sm:w-48" />
+                </div>
+                <Button type="button" onClick={verifyCode} disabled={pending || code.length !== 6}>Bestätigen</Button>
+              </div>
+            ) : null}
+            {sms ? <p role="status" className={sms.ok ? "text-sm text-muted" : "text-sm text-danger"}>{sms.message}</p> : null}
+            {sms?.devCode ? <p className="rounded-lg border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-warning">Testmodus (noch kein SMS-Anbieter angebunden): Dein Code lautet <strong>{sms.devCode}</strong>.</p> : null}
+          </div>
+
+          {/* Messenger */}
+          <div className="space-y-3 border-t border-border pt-6">
+            <h3 className="font-display text-xl text-white">Messenger</h3>
+            <div className="flex flex-wrap gap-x-8 gap-y-3 text-sm">
+              <label className="flex items-center gap-2"><Checkbox name="whatsappEnabled" defaultChecked={profile.whatsappEnabled} /> WhatsApp</label>
+              <label className="flex items-center gap-2"><Checkbox name="telegramEnabled" defaultChecked={profile.telegramEnabled} /> Telegram</label>
+            </div>
+            <p className="text-xs text-subtle">Erreichbar über deine oben angegebene Telefonnummer.</p>
+          </div>
+
+          {/* Adresse */}
+          <div className="space-y-5 border-t border-border pt-6">
+            <h3 className="font-display text-xl text-white">Adresse</h3>
+            <div className="grid grid-cols-[minmax(0,1fr)_7rem] gap-4 sm:grid-cols-[minmax(0,1fr)_10rem] sm:gap-5">
+              <Field label="Straße" name="street" errors={s?.errors?.street}>
+                <Input id="street" name="street" autoComplete="address-line1" defaultValue={profile.street ?? ""} maxLength={80} />
+              </Field>
+              <Field label="Hausnr." name="houseNumber" errors={s?.errors?.houseNumber}>
+                <Input id="houseNumber" name="houseNumber" defaultValue={profile.houseNumber ?? ""} maxLength={10} />
+              </Field>
+            </div>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5">
+              <Field label="PLZ" name="postalCode" errors={s?.errors?.postalCode}>
+                <Input id="postalCode" name="postalCode" autoComplete="postal-code" defaultValue={profile.postalCode ?? ""} inputMode="numeric" maxLength={5} />
+              </Field>
+              <Field label="Stadt" name="city" errors={s?.errors?.city} required>
+                <Input id="city" name="city" autoComplete="address-level2" value={city} onChange={(e) => setCity(e.target.value)} maxLength={80} />
+              </Field>
+              <div className="col-span-2 sm:col-span-1">
+                <Field label="Bezirk" name="district" errors={s?.errors?.district}>
+                  {districts ? (
+                    <FancySelect key={`d-${city.trim().toLowerCase()}`} name="district" ariaLabel="Bezirk" placeholder="Bezirk wählen" defaultValue={districts.includes(district) ? district : ""}
+                      onChange={setDistrict} options={districts.map((d) => ({ value: d, label: d }))} />
+                  ) : (
+                    <Input id="district" name="district" value={district} onChange={(e) => setDistrict(e.target.value)} maxLength={80} />
+                  )}
+                </Field>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Switch id="showAddress" name="showAddress" checked={showAddress} onChange={setShowAddress} label="Adresse anzeigen" />
+              <label htmlFor="showAddress" className="text-sm font-medium text-foreground">Adresse anzeigen: <span className={showAddress ? "text-gold" : "text-muted"}>{showAddress ? "Ja" : "Nein"}</span></label>
+            </div>
+            <p className="text-xs text-subtle">
+              {showAddress ? "Straße, Hausnummer, PLZ, Stadt und Bezirk sind auf deiner Sedcard sichtbar." : "Öffentlich sind nur Bezirk und Stadt sichtbar – Straße und Hausnummer bleiben verborgen."}
+            </p>
+          </div>
         </div>
       )}
     </StepForm>
@@ -247,21 +350,12 @@ export function LocationStep({ profile }: { profile: { id: string; city: string;
 }
 
 type Avail = Availability;
-export function ContactStep({ profile }: { profile: { id: string; contactPhone: string | null; contactWhatsapp: string | null; contactEmail: string | null; contactWebsite: string | null; showPhone: boolean; allowMessages: boolean; availabilityNote: string | null; availability: Avail; prices: PriceRow[]; priceNote: string | null } }) {
+/** Schritt 5 „Zeiten & Preise“. */
+export function TimesPricesStep({ profile }: { profile: { id: string; availability: Avail; prices: PriceRow[]; priceNote: string | null } }) {
   return (
-    <StepForm action={saveContactAction} profileId={profile.id}>
-      {(s) => (
+    <StepForm action={saveTimesPricesAction} profileId={profile.id}>
+      {() => (
         <>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Telefon" name="contactPhone" errors={s?.errors?.contactPhone}><Input id="contactPhone" name="contactPhone" type="tel" defaultValue={profile.contactPhone ?? ""} /></Field>
-            <Field label="WhatsApp" name="contactWhatsapp" errors={s?.errors?.contactWhatsapp}><Input id="contactWhatsapp" name="contactWhatsapp" type="tel" defaultValue={profile.contactWhatsapp ?? ""} /></Field>
-            <Field label="E-Mail" name="contactEmail" errors={s?.errors?.contactEmail}><Input id="contactEmail" name="contactEmail" type="email" defaultValue={profile.contactEmail ?? ""} /></Field>
-            <Field label="Website" name="contactWebsite" errors={s?.errors?.contactWebsite}><Input id="contactWebsite" name="contactWebsite" type="url" placeholder="https://" defaultValue={profile.contactWebsite ?? ""} /></Field>
-          </div>
-          <div className="flex flex-col gap-3 text-sm sm:flex-row sm:gap-8">
-            <label className="flex items-center gap-2"><Checkbox name="showPhone" defaultChecked={profile.showPhone} /> Telefon/WhatsApp öffentlich anzeigen</label>
-            <label className="flex items-center gap-2"><Checkbox name="allowMessages" defaultChecked={profile.allowMessages} /> Nachrichten über Top Girls erlauben</label>
-          </div>
           <AvailabilityEditor initial={profile.availability} />
           <PriceEditor initial={profile.prices} />
           <Field label="Hinweis zu den Preisen" name="priceNote">

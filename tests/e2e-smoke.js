@@ -22,7 +22,7 @@ require("node:fs").mkdirSync(out, { recursive: true });
     await page.getByRole("button", { name: "JA, ICH BIN 18 ODER ÄLTER" }).click();
     await page.waitForURL(BASE + "/frauen");
   });
-  await step("Startseite", async () => { await page.goto(BASE + "/"); await page.getByText("Premium-Anzeigen").first().waitFor(); await page.screenshot({ path: `${out}/02-home.png`, fullPage: true }); });
+  await step("Startseite", async () => { await page.goto(BASE + "/"); await page.locator('a[href^="/profil/"]').first().waitFor(); await page.screenshot({ path: `${out}/02-home.png`, fullPage: true }); });
   await step("Filter Haarfarbe", async () => {
     await page.goto(BASE + "/frauen");
     await page.getByRole("button", { name: "Blond" }).click();
@@ -69,19 +69,20 @@ require("node:fs").mkdirSync(out, { recursive: true });
     await page.fill("#age", "25");
     await page.getByRole("button", { name: "Speichern & weiter" }).click();
     await page.waitForURL(/schritt=2/);
-    await page.fill("#description", "Dies ist eine ausführliche Testbeschreibung für die Sedcard, die mindestens achtzig Zeichen lang sein muss, damit sie gültig ist.");
+    await page.fill("#city", "Berlin");
     await page.getByRole("button", { name: "Speichern & weiter" }).click();
     await page.waitForURL(/schritt=3/);
+    await page.fill("#description", "Dies ist eine ausführliche Testbeschreibung für die Sedcard, die mindestens achtzig Zeichen lang sein muss, damit sie gültig ist.");
+    await page.getByRole("button", { name: "Speichern & weiter" }).click();
+    await page.waitForURL(/schritt=4/);
     await page.screenshot({ path: `${out}/07-wizard.png` });
   });
-  await step("Nachricht Besucher → Anbieterin", async () => {
+  await step("Sedcard ohne Nachrichtenfunktion", async () => {
     await login("besucher@topgirls.local");
     await page.goto(BASE + "/frauen?q=Lara");
     await page.locator('a[href^="/profil/lara"]').first().click();
-    await page.fill("#msg-body", "Hallo, Testnachricht!");
-    await page.getByRole("button", { name: "Nachricht senden" }).click();
-    await page.waitForURL(/nachrichten\//);
-    await page.getByText("Hallo, Testnachricht!").first().waitFor();
+    await page.getByRole("button", { name: "Kontaktdaten anzeigen" }).waitFor();
+    if (await page.locator("#msg-body").count()) throw new Error("Nachrichtenformular sichtbar");
   });
   await step("Besucher kein Admin", async () => { await page.goto(BASE + "/admin"); await page.waitForURL(/kein-zugriff/); });
   await step("Admin: Sedcard freigeben", async () => {

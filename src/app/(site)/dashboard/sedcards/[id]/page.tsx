@@ -8,9 +8,10 @@ import { formatDate } from "@/lib/format";
 import { PROFILE_STATUS, VERIFICATION_STATUS } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { parsePrices } from "@/lib/prices";
+import type { Availability } from "@/lib/availability";
 import { WIZARD_HIDDEN_FILTER_KEYS } from "@/lib/meeting";
 import { deleteImageAction, deleteProfileAction, getPublishChecklist, pauseProfileAction, setCoverImageAction } from "@/actions/profiles";
-import { ContactStep, ProfileDataStep, DescriptionStep, ImagesStep, LocationStep, ModelConsentUpload, SubmitStep } from "@/components/dashboard/sedcard-steps";
+import { ContactDataStep, ProfileDataStep, DescriptionStep, ImagesStep, TimesPricesStep, ModelConsentUpload, SubmitStep } from "@/components/dashboard/sedcard-steps";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
@@ -18,7 +19,7 @@ import { Gallery } from "@/components/profiles/gallery";
 
 export const metadata = { title: "Sedcard bearbeiten" };
 
-const STEPS = ["Profildaten", "Beschreibung", "Bilder", "Standort", "Kontakt, Zeiten & Preise", "Vorschau & Veröffentlichung"];
+const STEPS = ["Profildaten", "Kontaktdaten", "Beschreibung", "Bilder", "Zeiten & Preise", "Vorschau & Veröffentlichung"];
 
 export default async function EditSedcardPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ schritt?: string }> }) {
   const user = await requirePermission("profile.own");
@@ -89,8 +90,16 @@ export default async function EditSedcardPage({ params, searchParams }: { params
             values={p.attributes.map((a) => ({ filterId: a.filterId, person: a.person, numberValue: a.numberValue, boolValue: a.boolValue, optionIds: a.options.map((o) => o.optionId) }))}
           />
         )}
-        {step === 2 && <DescriptionStep profile={p} />}
-        {step === 3 && (
+        {step === 2 && (
+          <ContactDataStep
+            profile={{
+              id: p.id, contactPhone: p.contactPhone, phoneVerified: !!p.phoneVerifiedAt, whatsappEnabled: p.whatsappEnabled, telegramEnabled: p.telegramEnabled,
+              street: p.street, houseNumber: p.houseNumber, postalCode: p.postalCode, city: p.city, district: p.district, showAddress: p.showAddress,
+            }}
+          />
+        )}
+        {step === 3 && <DescriptionStep profile={p} />}
+        {step === 4 && (
           <ImagesStep
             profileId={p.id}
             images={p.images.map((i) => ({ id: i.id, thumb: mediaUrl(i.thumbKey)!, status: i.status, isCover: i.isCover, rejectReason: i.rejectReason }))}
@@ -98,8 +107,7 @@ export default async function EditSedcardPage({ params, searchParams }: { params
             onCover={setCoverImageAction}
           />
         )}
-        {step === 4 && <LocationStep profile={p} />}
-        {step === 5 && <ContactStep profile={{ ...p, availability: (p.availability ?? {}) as Record<string, { active?: boolean; from?: string; to?: string }>, prices: parsePrices(p.prices) }} />}
+        {step === 5 && <TimesPricesStep profile={{ id: p.id, availability: (p.availability ?? {}) as Availability, prices: parsePrices(p.prices), priceNote: p.priceNote }} />}
         {step === 6 && checklist && (
           <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
             <div>
@@ -107,7 +115,7 @@ export default async function EditSedcardPage({ params, searchParams }: { params
               <Gallery name={p.stageName} images={p.images.map((i) => ({ id: i.id, src: mediaUrl(i.storageKey)!, thumb: mediaUrl(i.thumbKey)! }))} />
               <p className="mt-4 font-display text-3xl text-white">{p.stageName}{p.age ? `, ${p.age}` : ""}</p>
               <p className="text-sm text-gold-light">{p.headline}</p>
-              <p className="mt-1 text-xs text-muted">{p.category.name} · {p.city || "Kein Standort"}</p>
+              <p className="mt-1 text-xs text-muted">{p.category.name} · {[p.district, p.city].filter(Boolean).join(", ") || "Kein Standort"}</p>
               <p className="mt-4 line-clamp-6 whitespace-pre-line text-sm text-foreground/80">{p.description || "Noch keine Beschreibung."}</p>
             </div>
             <div className="space-y-6">

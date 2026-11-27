@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BadgeCheck, Car, Check, ChevronDown, Clock, Globe, House, Languages, Mail, MapPin, Sparkles } from "lucide-react";
+import { BadgeCheck, Car, Check, ChevronDown, Clock, House, Languages, MapPin, Sparkles } from "lucide-react";
 import { MEETING_FILTER_KEY, meetingTypes } from "@/lib/meeting";
 import { db } from "@/lib/db";
 import { publicProfileWhere } from "@/lib/queries/profiles";
@@ -14,11 +14,11 @@ import { parsePrices } from "@/lib/prices";
 import { BY_ARRANGEMENT, dayLabel, dayMode, hasAnyAvailability, type Availability } from "@/lib/availability";
 import { Gallery } from "@/components/profiles/gallery";
 import { ContactReveal } from "@/components/profiles/contact-reveal";
+import { publicLocation } from "@/lib/districts";
 import { ReportDialog } from "@/components/report/report-dialog";
 import { AdSlot } from "@/components/ads/ad-banner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { StartConversationForm } from "@/components/messages/start-conversation";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -105,7 +105,7 @@ export default async function ProfilePage({ params }: Params) {
           <h1 className="mt-4 font-display text-5xl text-white">{p.stageName}{p.age ? <span className="text-3xl text-muted">, {p.age}{duo && p.age2 ? ` & ${p.age2}` : ""}</span> : null}</h1>
           {p.headline ? <p className="mt-2 text-lg text-gold-light">{p.headline}</p> : null}
           <p className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted">
-            <span className="flex items-center gap-1.5"><MapPin className="size-4 text-gold" /> {p.postalCode ? `${p.postalCode} ` : ""}{p.city}{p.region ? `, ${p.region}` : ""}</span>
+            <span className="flex items-center gap-1.5"><MapPin className="size-4 text-gold" /> {publicLocation(p)}</span>
             {p.languages.length ? <span className="flex items-center gap-1.5"><Languages className="size-4 text-gold" /> {p.languages.join(", ")}</span> : null}
           </p>
           {p.owner.companyName ? <p className="mt-2 text-xs text-subtle">Inserent: {p.owner.companyName}</p> : null}
@@ -158,19 +158,8 @@ export default async function ProfilePage({ params }: Params) {
               <div className="rounded-xl border border-border bg-surface p-5">
                 <p className="mb-4 font-display text-xl text-white">Kontakt</p>
                 <div className="space-y-2">
-                  <ContactReveal profileId={p.id} hasPhone={p.showPhone && !!p.contactPhone} hasWhatsapp={p.showPhone && !!p.contactWhatsapp} />
-                  {p.contactEmail ? <Button asChild variant="secondary" className="w-full"><a href={`mailto:${p.contactEmail}`}><Mail /> E-Mail</a></Button> : null}
-                  {p.contactWebsite ? <Button asChild variant="secondary" className="w-full"><a href={p.contactWebsite} target="_blank" rel="noopener noreferrer nofollow ugc"><Globe /> Website</a></Button> : null}
+                  <ContactReveal profileId={p.id} hasPhone={!!p.contactPhone && !!p.phoneVerifiedAt} />
                 </div>
-                {p.allowMessages ? (
-                  <div className="mt-5 border-t border-border pt-5">
-                    {user ? (
-                      user.id === p.owner.id ? <p className="text-xs text-subtle">Das ist deine eigene Sedcard.</p> : <StartConversationForm profileId={p.id} />
-                    ) : (
-                      <p className="text-xs text-muted"><Link href={`/login?next=/profil/${p.slug}`} className="text-gold hover:underline">Melde dich an</Link>, um eine Nachricht zu senden.</p>
-                    )}
-                  </div>
-                ) : null}
                 <p className="mt-5 text-[11px] leading-relaxed text-subtle">Top Girls vermittelt keine Dienstleistungen. Vereinbarungen kommen ausschließlich zwischen Inserent und Interessent zustande.</p>
               </div>
               <AdSlot location="PROFILE_SIDEBAR" layout="stack" />
