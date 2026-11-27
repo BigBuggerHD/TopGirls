@@ -1,14 +1,13 @@
 "use client";
 import { useState } from "react";
-import { ArrowRight, ArrowLeft, Ban, Copy } from "lucide-react";
+import { ArrowRight, ArrowLeft, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Checkbox, Input } from "@/components/ui/input";
 import { WEEKDAYS } from "@/lib/labels";
 import { dayMode, type Availability, type DayMode } from "@/lib/availability";
 import { centsToInput, PRICE_DURATIONS, type PriceRow } from "@/lib/prices";
 import { cn } from "@/lib/utils";
 import { FancySelect } from "@/components/ui/fancy-select";
-import { Switch } from "@/components/ui/switch";
 
 type DayState = { active: boolean; mode: DayMode; from: string; to: string };
 
@@ -19,16 +18,7 @@ const timeOptions = (current: string) => {
   return list.map((t) => ({ value: t, label: `${t} Uhr` }));
 };
 
-const MODES: { mode: DayMode; label: string }[] = [
-  { mode: "time", label: "Uhrzeit" },
-  { mode: "allday", label: "Ganztägig" },
-  { mode: "arrange", label: "Zeit n. Absprache" },
-];
-
-/**
- * Verfügbarkeit je Wochentag: Schalter pro Tag, Art (Uhrzeit / Ganztägig / Uhrzeit nach Absprache)
- * und Von–Bis als Dropdowns. Nicht aktive Tage gelten als „nach Absprache“.
- */
+/** Verfügbarkeit je Wochentag mit „Ganztägig“ und „Uhrzeit nach Absprache“. Nicht ausgewählte Tage gelten als „nach Absprache“. */
 export function AvailabilityEditor({ initial }: { initial: Availability }) {
   const [days, setDays] = useState<Record<string, DayState>>(() =>
     Object.fromEntries(
@@ -39,76 +29,46 @@ export function AvailabilityEditor({ initial }: { initial: Availability }) {
     ),
   );
   const set = (k: string, patch: Partial<DayState>) => setDays((all) => ({ ...all, [k]: { ...all[k], ...patch } }));
-  const firstActive = WEEKDAYS.map(([k]) => k).find((k) => days[k].active);
-  const copyToAll = () => {
-    if (!firstActive) return;
-    const src = days[firstActive];
-    setDays((all) => Object.fromEntries(Object.entries(all).map(([k, d]) => [k, d.active ? { ...d, mode: src.mode, from: src.from, to: src.to } : d])));
-  };
+  const toggleMode = (k: string, mode: DayMode) => set(k, { active: true, mode: days[k].mode === mode ? "time" : mode });
 
   return (
-    <fieldset className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <legend className="font-display text-xl text-white">Verfügbarkeit</legend>
-        <div className="flex flex-wrap gap-2">
-          {firstActive ? (
-            <Button type="button" variant="outline" size="sm" onClick={copyToAll} title="Zeiten des ersten aktiven Tages für alle aktiven Tage übernehmen">
-              <Copy /> Für alle aktiven Tage übernehmen
-            </Button>
-          ) : null}
-          <Button type="button" variant="outline" size="sm" onClick={() => setDays((all) => Object.fromEntries(Object.entries(all).map(([k, d]) => [k, { ...d, active: false }])))}>
-            <Ban /> Verfügbarkeit nach Absprache
-          </Button>
-        </div>
+    <fieldset className="space-y-2">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <legend className="text-sm font-medium">Verfügbarkeit</legend>
+        <Button type="button" variant="outline" size="sm" onClick={() => setDays((all) => Object.fromEntries(Object.entries(all).map(([k, d]) => [k, { ...d, active: false }])))}>
+          <Ban /> Verfügbarkeit nach Absprache
+        </Button>
       </div>
-      <p className="text-xs text-subtle">Schalte die Tage ein, an denen du verfügbar bist. Ausgeschaltete Tage erscheinen auf deiner Sedcard als „nach Absprache“.</p>
-      <div className="divide-y divide-border rounded-xl border border-border bg-surface-2 px-4 sm:px-5">
-        {WEEKDAYS.map(([k, label]) => {
-          const d = days[k];
-          return (
-            <div key={k} className="grid gap-3 py-3 md:grid-cols-[9.5rem_auto_1fr] md:items-center">
-              {/* Tag + Schalter */}
-              <div className="flex items-center gap-3">
-                <Switch name={`av_${k}_on`} checked={d.active} onChange={(v) => set(k, { active: v })} label={`${label} verfügbar`} />
-                <span className={cn("text-sm font-medium", d.active ? "text-foreground" : "text-subtle")}>{label}</span>
-                {!d.active ? <span className="ml-auto text-sm text-subtle md:hidden">nach Absprache</span> : null}
-              </div>
-              {d.active ? (
-                <>
-                  {/* Art der Verfügbarkeit */}
-                  <div className="inline-flex w-fit rounded-lg border border-border bg-background-alt p-0.5" role="radiogroup" aria-label={`${label}: Art der Verfügbarkeit`}>
-                    {MODES.map((m) => (
-                      <button key={m.mode} type="button" role="radio" aria-checked={d.mode === m.mode} onClick={() => set(k, { mode: m.mode })}
-                        className={cn("rounded-md px-3 py-1.5 text-xs transition-colors", d.mode === m.mode ? "bg-gold/15 text-gold" : "text-muted hover:text-foreground")}>
-                        {m.label}
-                      </button>
-                    ))}
-                  </div>
-                  {/* Uhrzeit von – bis */}
-                  {d.mode === "time" ? (
-                    <div className="flex items-center gap-2 md:justify-end">
-                      <div className="w-32"><FancySelect key={`${k}-from-${d.from}`} name={`av_${k}_from`} allowEmpty={false} defaultValue={d.from} onChange={(v) => set(k, { from: v })} ariaLabel={`${label} von`} options={timeOptions(d.from)} /></div>
-                      <span className="text-sm text-subtle">bis</span>
-                      <div className="w-32"><FancySelect key={`${k}-to-${d.to}`} name={`av_${k}_to`} allowEmpty={false} defaultValue={d.to} onChange={(v) => set(k, { to: v })} ariaLabel={`${label} bis`} options={timeOptions(d.to)} /></div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted md:text-right">{d.mode === "allday" ? "ganztägig verfügbar" : "Uhrzeit nach Absprache"}</p>
-                  )}
-                </>
-              ) : (
-                <p className="hidden text-sm text-subtle md:col-span-2 md:block md:text-right">nach Absprache</p>
-              )}
-              <input type="hidden" name={`av_${k}_mode`} value={d.active ? d.mode : "none"} />
-              {!(d.active && d.mode === "time") ? (
-                <>
-                  <input type="hidden" name={`av_${k}_from`} value={d.from} />
-                  <input type="hidden" name={`av_${k}_to`} value={d.to} />
-                </>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
+      <p className="text-xs text-subtle">Nicht ausgewählte Tage erscheinen auf deiner Sedcard als „nach Absprache“.</p>
+      {WEEKDAYS.map(([k, label]) => {
+        const d = days[k];
+        const mode = d.active ? d.mode : null;
+        const chip = (m: DayMode, text: string) => (
+          <button
+            type="button"
+            onClick={() => toggleMode(k, m)}
+            aria-pressed={mode === m}
+            className={cn("h-9 rounded-md border px-3 text-xs transition-colors", mode === m ? "border-gold bg-gold/15 text-gold" : "border-border text-muted hover:text-foreground")}
+          >
+            {text}
+          </button>
+        );
+        return (
+          <div key={k} className="grid items-center gap-2 rounded-md bg-background-alt px-3 py-2 text-sm sm:grid-cols-[130px_1fr_1fr_auto_auto]">
+            <label className="flex items-center gap-2">
+              <Checkbox checked={d.active} onChange={(e) => set(k, { active: e.target.checked })} aria-label={`${label} verfügbar`} />
+              {label}
+            </label>
+            <FancySelect key={`${k}-from-${d.from}`} name={`av_${k}_from_auswahl`} allowEmpty={false} defaultValue={d.from} onChange={(v) => set(k, { from: v })} disabled={mode !== "time"} ariaLabel={`${label} von`} options={timeOptions(d.from)} className="h-9" />
+            <FancySelect key={`${k}-to-${d.to}`} name={`av_${k}_to_auswahl`} allowEmpty={false} defaultValue={d.to} onChange={(v) => set(k, { to: v })} disabled={mode !== "time"} ariaLabel={`${label} bis`} options={timeOptions(d.to)} className="h-9" />
+            {chip("allday", "Ganztägig")}
+            {chip("arrange", "Uhrzeit nach Absprache")}
+            <input type="hidden" name={`av_${k}_mode`} value={mode ?? "none"} />
+            <input type="hidden" name={`av_${k}_from`} value={d.from} />
+            <input type="hidden" name={`av_${k}_to`} value={d.to} />
+          </div>
+        );
+      })}
     </fieldset>
   );
 }
