@@ -7,16 +7,9 @@ import { WEEKDAYS } from "@/lib/labels";
 import { dayMode, type Availability, type DayMode } from "@/lib/availability";
 import { centsToInput, PRICE_DURATIONS, type PriceRow } from "@/lib/prices";
 import { cn } from "@/lib/utils";
-import { FancySelect } from "@/components/ui/fancy-select";
+import { TimeField } from "@/components/ui/time-field";
 
 type DayState = { active: boolean; mode: DayMode; from: string; to: string };
-
-/** Uhrzeiten im 30-Minuten-Raster für die Auswahl (vorhandene abweichende Werte werden ergänzt). */
-const TIMES = Array.from({ length: 48 }, (_, i) => `${String(Math.floor(i / 2)).padStart(2, "0")}:${i % 2 ? "30" : "00"}`);
-const timeOptions = (current: string) => {
-  const list = TIMES.includes(current) || !/^\d{2}:\d{2}$/.test(current) ? TIMES : [...TIMES, current].sort();
-  return list.map((t) => ({ value: t, label: `${t} Uhr` }));
-};
 
 /** Verfügbarkeit je Wochentag mit „Ganztägig“ und „Uhrzeit nach Absprache“. Nicht ausgewählte Tage gelten als „nach Absprache“. */
 export function AvailabilityEditor({ initial }: { initial: Availability }) {
@@ -59,8 +52,8 @@ export function AvailabilityEditor({ initial }: { initial: Availability }) {
               <Checkbox checked={d.active} onChange={(e) => set(k, { active: e.target.checked })} aria-label={`${label} verfügbar`} />
               {label}
             </label>
-            <FancySelect key={`${k}-from-${d.from}`} name={`av_${k}_from_auswahl`} allowEmpty={false} defaultValue={d.from} onChange={(v) => set(k, { from: v })} disabled={mode !== "time"} ariaLabel={`${label} von`} options={timeOptions(d.from)} className="h-9" />
-            <FancySelect key={`${k}-to-${d.to}`} name={`av_${k}_to_auswahl`} allowEmpty={false} defaultValue={d.to} onChange={(v) => set(k, { to: v })} disabled={mode !== "time"} ariaLabel={`${label} bis`} options={timeOptions(d.to)} className="h-9" />
+            <TimeField value={d.from} onChange={(v) => set(k, { from: v })} disabled={mode !== "time"} ariaLabel={`${label} von`} className="h-9" />
+            <TimeField value={d.to} onChange={(v) => set(k, { to: v })} disabled={mode !== "time"} ariaLabel={`${label} bis`} className="h-9" />
             {chip("allday", "Ganztägig")}
             {chip("arrange", "Uhrzeit nach Absprache")}
             <input type="hidden" name={`av_${k}_mode`} value={mode ?? "none"} />
