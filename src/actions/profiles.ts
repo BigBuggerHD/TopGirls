@@ -125,7 +125,7 @@ export async function saveDescriptionAction(_: ActionState, fd: FormData): Promi
     where: { id: p.id },
     data: { description, headline, ...(changed ? reviewIfPublished(p.status) : {}) },
   });
-  return done(p.id, 5, fd);
+  return done(p.id, 6, fd);
 }
 
 /** Schritt 2 „Kontaktdaten“: Telefonnummer, Messenger, Adresse. */
@@ -293,41 +293,49 @@ async function writeAttributes(p: { id: string; profileType: string; categoryId:
   });
 }
 
-export async function uploadImagesAction(_: ActionState, fd: FormData): Promise<ActionState> {
+/**
+ * Lädt EIN Bild hoch (der Assistent sendet die Bilder einzeln nacheinander – so bleibt jede Anfrage unter dem Größenlimit).
+ * kind = "cover": Anzeigebild (das bisherige Anzeigebild bleibt als normales Galeriebild erhalten); "gallery": weiteres Bild.
+ */
+export async function uploadProfileImageAction(fd: FormData): Promise<ActionState> {
   const user = await requireUser();
   const p = await ownedProfile(String(fd.get("profileId")), user);
   if (!p) return { ok: false, message: "Sedcard nicht gefunden." };
-  if (!rateLimit(`upload:${user.id}`, 40, 60 * 60_000).ok) return { ok: false, message: "Upload-Limit erreicht. Bitte versuche es später erneut." };
+  if (!rateLimit(`upload:${user.id}`, 60, 60 * 60_000).ok) return { ok: false, message: "Upload-Limit erreicht. Bitte versuche es später erneut." };
   if (fd.get("imageConsent") !== "on") return { ok: false, message: "Bitte bestätige die Bildrechte und die Einwilligung der abgebildeten Person." };
-  const files = fd.getAll("images").filter((f): f is File => f instanceof File && f.size > 0);
-  if (files.length === 0) return { ok: false, message: "Bitte wähle mindestens ein Bild aus." };
+  const file = fd.get("image");
+  if (!(file instanceof File) || file.size === 0) return { ok: false, message: "Keine Datei ausgewählt." };
+  const kind = fd.get("kind") === "cover" ? "cover" : "gallery";
   const settings = await getSettings();
-  const existing = await db.profileImage.count({ where: { profileId: p.id } });
-  if (existing + files.length > settings.maxImagesPerProfile) return { ok: false, message: `Es sind maximal ${settings.maxImagesPerProfile} Bilder pro Sedcard erlaubt.` };
+  const existing = await db.profileImage.findMany({ where: { profileId: p.id }, select: { sortOrder: true, isCover: true } });
+  if (existing.length >= settings.maxImagesPerProfile) return { ok: false, message: `${file.name}: Es sind maximal ${settings.maxImagesPerProfile} Bilder pro Sedcard erlaubt.` };
 
-  const errors: string[] = [];
-  let added = 0;
-  for (const [i, file] of files.entries()) {
-    try {
-      const img = await processAndStoreImage(file, `profiles/${p.id}`);
-      // Abgleich mit gesperrten Bildern (Hash-Sperrliste)
-      const blocked = await db.profileImage.findFirst({ where: { sha256: img.sha256, status: "REJECTED", rejectReason: { startsWith: "[SPERRE]" } } });
-      if (blocked) {
-        await storage().delete(img.storageKey);
-        await storage().delete(img.thumbKey);
-        errors.push(`${file.name}: Dieses Bild wurde gesperrt und darf nicht verwendet werden.`);
-        continue;
-      }
-      await db.profileImage.create({ data: { ...img, profileId: p.id, isCover: existing + i === 0, sortOrder: existing + i } });
-      added++;
-    } catch (e) {
-      errors.push(`${file.name}: ${e instanceof UploadError ? e.message : "Upload fehlgeschlagen."}`);
+  try {
+    const img = await processAndStoreImage(file, `profiles/${p.id}`);
+    // Abgleich mit gesperrten Bildern (Hash-Sperrliste)
+    const blocked = await db.profileImage.findFirst({ where: { sha256: img.sha256, status: "REJECTED", rejectReason: { startsWith: "[SPERRE]" } } });
+    if (blocked) {
+      await storage().delete(img.storageKey);
+      await storage().delete(img.thumbKey);
+      return { ok: false, message: `${file.name}: Dieses Bild wurde gesperrt und darf nicht verwendet werden.` };
     }
+    const hasCover = existing.some((e) => e.isCover);
+    const maxSort = existing.reduce((m, e) => Math.max(m, e.sortOrder), -1);
+    if (kind === "cover") {
+      await db.$transaction([
+        db.profileImage.updateMany({ where: { profileId: p.id }, data: { isCover: false } }),
+        db.profileImage.create({ data: { ...img, profileId: p.id, isCover: true, sortOrder: maxSort + 1 } }),
+      ]);
+    } else {
+      // Ohne Anzeigebild wird das erste Bild automatisch zum Anzeigebild
+      await db.profileImage.create({ data: { ...img, profileId: p.id, isCover: !hasCover, sortOrder: maxSort + 1 } });
+    }
+  } catch (e) {
+    return { ok: false, message: `${file.name}: ${e instanceof UploadError ? e.message : "Upload fehlgeschlagen."}` };
   }
   await db.profile.update({ where: { id: p.id }, data: { consentConfirmedAt: new Date() } });
   revalidatePath(`/dashboard/sedcards/${p.id}`);
-  if (errors.length) return { ok: added > 0, message: `${added} Bild(er) hochgeladen. ${errors.join(" ")}` };
-  return { ok: true, message: `${added} Bild(er) hochgeladen. Neue Bilder werden vor der Veröffentlichung geprüft.` };
+  return { ok: true, message: "Hochgeladen." };
 }
 
 export async function deleteImageAction(fd: FormData) {
@@ -382,7 +390,7 @@ export async function getPublishChecklist(profileId: string) {
   const items = [
     { ok: p.stageName !== "Neue Sedcard" && p.stageName.length >= 2, label: "Profildaten ausgefüllt" },
     { ok: p.description.length >= 80, label: "Beschreibung (mind. 80 Zeichen)" },
-    { ok: p.images.length > 0, label: "Mindestens ein Bild hochgeladen" },
+    { ok: p.images.length > 0, label: "Anzeigebild hochgeladen", link: "?schritt=5" },
     { ok: !!(p.contactPhone && p.phoneVerifiedAt), label: "Telefonnummer per SMS verifiziert", link: "?schritt=2" },
     { ok: p.city.length >= 2, label: "Stadt angegeben", link: "?schritt=2" },
     { ok: !!p.owner.emailVerifiedAt, label: "E-Mail-Adresse bestätigt" },

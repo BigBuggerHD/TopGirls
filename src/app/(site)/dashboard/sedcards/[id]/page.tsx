@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Check, CircleAlert, Eye } from "lucide-react";
 import { requirePermission } from "@/lib/auth/session";
 import { db } from "@/lib/db";
+import { getSettings } from "@/lib/settings";
 import { mediaUrl } from "@/lib/media";
 import { formatDate } from "@/lib/format";
 import { PROFILE_STATUS, VERIFICATION_STATUS } from "@/lib/labels";
@@ -19,7 +20,7 @@ import { Gallery } from "@/components/profiles/gallery";
 
 export const metadata = { title: "Sedcard bearbeiten" };
 
-const STEPS = ["Profildaten", "Kontaktdaten", "Service", "Verfügbarkeit & Preise", "Beschreibung", "Bilder", "Vorschau & Veröffentlichung"];
+const STEPS = ["Profildaten", "Kontaktdaten", "Service", "Verfügbarkeit & Preise", "Bilder", "Beschreibung", "Vorschau & Veröffentlichung"];
 
 export default async function EditSedcardPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ schritt?: string }> }) {
   const user = await requirePermission("profile.own");
@@ -43,6 +44,7 @@ export default async function EditSedcardPage({ params, searchParams }: { params
   const filterProps = filters.map((f) => ({ id: f.id, key: f.key, label: f.label, type: f.type, unit: f.unit, helpText: f.helpText, minValue: f.minValue, maxValue: f.maxValue, perPerson: f.perPerson, options: f.options.map((o) => ({ id: o.id, label: o.label, value: o.value })) }));
   const valueProps = p.attributes.map((a) => ({ filterId: a.filterId, person: a.person, numberValue: a.numberValue, boolValue: a.boolValue, optionIds: a.options.map((o) => o.optionId) }));
   const checklist = step === 7 ? await getPublishChecklist(p.id) : null;
+  const settings = await getSettings();
 
   return (
     <div>
@@ -103,13 +105,15 @@ export default async function EditSedcardPage({ params, searchParams }: { params
           />
         )}
         {step === 3 && <ServiceStep profileId={p.id} filters={filterProps} values={valueProps} />}
-        {step === 5 && <DescriptionStep profile={p} />}
-        {step === 6 && (
+        {step === 6 && <DescriptionStep profile={p} />}
+        {step === 5 && (
           <ImagesStep
             profileId={p.id}
             images={p.images.map((i) => ({ id: i.id, thumb: mediaUrl(i.thumbKey)!, status: i.status, isCover: i.isCover, rejectReason: i.rejectReason }))}
             onDelete={deleteImageAction}
             onCover={setCoverImageAction}
+            maxImages={settings.maxImagesPerProfile}
+            nextHref="?schritt=6"
           />
         )}
         {step === 4 && (

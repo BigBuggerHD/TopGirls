@@ -1,10 +1,11 @@
 "use client";
 import Image from "next/image";
 import { useActionState, useState, useTransition } from "react";
-import { BadgeCheck, CircleAlert } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { BadgeCheck, CircleAlert, Trash2 } from "lucide-react";
 import {
   saveProfileDataAction, saveContactDataAction, saveServiceAction, saveDescriptionAction, saveTimesPricesAction,
-  sendPhoneCodeAction, verifyPhoneCodeAction, submitForReviewAction, uploadImagesAction, uploadModelConsentAction,
+  sendPhoneCodeAction, verifyPhoneCodeAction, submitForReviewAction, uploadProfileImageAction, uploadModelConsentAction,
   type PhoneCodeState,
 } from "@/actions/profiles";
 import { Field, FormMessage, SubmitButton } from "@/components/ui/form";
@@ -17,6 +18,8 @@ import { AvailabilityEditor, PriceEditor } from "./availability-price-editors";
 import { FancySelect } from "@/components/ui/fancy-select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Alert } from "@/components/ui/alert";
+import { DropZone } from "@/components/ui/drop-zone";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { formatPhone, normalizePhone } from "@/lib/phone";
@@ -185,48 +188,129 @@ export function DescriptionStep({ profile }: { profile: { id: string; descriptio
   );
 }
 
-export function ImagesStep({ profileId, images, onDelete, onCover }: {
+type StepImage = { id: string; thumb: string; status: string; isCover: boolean; rejectReason: string | null };
+
+/**
+ * Schritt 5 „Bilder“: Anzeigebild und weitere Bilder – je ein Feld zum Hineinziehen mit Vorschau, darunter „Durchsuchen“.
+ * Beim Speichern werden die Bilder einzeln nacheinander hochgeladen (Fortschrittsanzeige).
+ */
+export function ImagesStep({ profileId, images, onDelete, onCover, maxImages, nextHref }: {
   profileId: string;
-  images: { id: string; thumb: string; status: string; isCover: boolean; rejectReason: string | null }[];
+  images: StepImage[];
   onDelete: (fd: FormData) => Promise<void>;
   onCover: (fd: FormData) => Promise<void>;
+  maxImages: number;
+  nextHref: string;
 }) {
+  const router = useRouter();
+  const [coverFile, setCoverFile] = useState<File[]>([]);
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+  const [consent, setConsent] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [pickErrors, setPickErrors] = useState<string[]>([]);
+  const [, startTransition] = useTransition();
+  const cover = images.find((i) => i.isCover) ?? null;
+  const gallery = images.filter((i) => !i.isCover);
   const statusLabel: Record<string, string> = { PENDING: "In Prüfung", APPROVED: "Freigegeben", REJECTED: "Abgelehnt" };
+  const free = maxImages - images.length;
+  const pending = coverFile.length + galleryFiles.length;
+
+  const act = (fn: (fd: FormData) => Promise<void>, imageId: string) => startTransition(async () => {
+    const fd = new FormData();
+    fd.set("imageId", imageId);
+    await fn(fd);
+    router.refresh();
+  });
+
+  async function save(goNext: boolean) {
+    setResult(null);
+    setPickErrors([]);
+    if (!pending) { if (goNext) router.push(nextHref); else setResult({ ok: true, message: "Keine neuen Bilder ausgewählt." }); return; }
+    if (!consent) { setResult({ ok: false, message: "Bitte bestätige die Bildrechte und die Einwilligung der abgebildeten Person." }); return; }
+    if (pending > free) { setResult({ ok: false, message: `Es sind maximal ${maxImages} Bilder pro Sedcard erlaubt (noch ${Math.max(free, 0)} frei).` }); return; }
+    const queue = [...coverFile.map((f) => ({ f, kind: "cover" })), ...galleryFiles.map((f) => ({ f, kind: "gallery" }))];
+    const errors: string[] = [];
+    const failed = { cover: [] as File[], gallery: [] as File[] };
+    for (const [i, { f, kind }] of queue.entries()) {
+      setBusy(`Lade Bild ${i + 1} von ${queue.length} hoch …`);
+      const fd = new FormData();
+      fd.set("profileId", profileId);
+      fd.set("kind", kind);
+      fd.set("imageConsent", "on");
+      fd.set("image", f);
+      try {
+        const r = await uploadProfileImageAction(fd);
+        if (!r?.ok) { errors.push(r?.message ?? `${f.name}: Upload fehlgeschlagen.`); failed[kind as "cover" | "gallery"].push(f); }
+      } catch {
+        errors.push(`${f.name}: Upload fehlgeschlagen.`);
+        failed[kind as "cover" | "gallery"].push(f);
+      }
+    }
+    setBusy(null);
+    setCoverFile(failed.cover);
+    setGalleryFiles(failed.gallery);
+    const done = queue.length - errors.length;
+    router.refresh();
+    if (errors.length) setResult({ ok: done > 0, message: `${done} von ${queue.length} Bild(ern) hochgeladen. ${errors.join(" ")}` });
+    else if (goNext) router.push(nextHref);
+    else setResult({ ok: true, message: `${done} Bild(er) hochgeladen. Neue Bilder werden vor der Veröffentlichung geprüft.` });
+  }
+
+  const tile = (img: StepImage) => (
+    <div key={img.id} className="overflow-hidden rounded-lg border border-border bg-surface-2">
+      <div className="relative aspect-[3/4]">
+        <Image src={img.thumb} alt="" fill className="object-cover" unoptimized />
+        <span className={`absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wider ${img.status === "APPROVED" ? "bg-success/80 text-black" : img.status === "REJECTED" ? "bg-danger/90 text-white" : "bg-warning/90 text-black"}`}>{statusLabel[img.status]}</span>
+      </div>
+      {img.rejectReason ? <p className="px-2 pt-2 text-[11px] text-danger">{img.rejectReason.replace("[SPERRE] ", "")}</p> : null}
+      <div className="flex items-center gap-1 p-1.5">
+        <button type="button" onClick={() => act(onCover, img.id)} className="min-w-0 flex-1 truncate rounded px-2 py-1.5 text-left text-xs text-muted hover:bg-surface-3 hover:text-gold">Als Anzeigebild</button>
+        <button type="button" onClick={() => act(onDelete, img.id)} aria-label="Bild löschen" title="Löschen" className="shrink-0 rounded p-1.5 text-danger hover:bg-danger/10"><Trash2 className="size-4" /></button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-8">
-      {images.length ? (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {images.map((img) => (
-            <div key={img.id} className="overflow-hidden rounded-lg border border-border bg-surface-2">
-              <div className="relative aspect-[3/4]">
-                <Image src={img.thumb} alt="" fill className="object-cover" unoptimized />
-                <span className={`absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wider ${img.status === "APPROVED" ? "bg-success/80 text-black" : img.status === "REJECTED" ? "bg-danger/90 text-white" : "bg-warning/90 text-black"}`}>{statusLabel[img.status]}</span>
-                {img.isCover ? <span className="absolute right-2 top-2 rounded-full bg-gold px-2 py-0.5 text-[10px] font-semibold uppercase text-background">Titelbild</span> : null}
-              </div>
-              {img.rejectReason ? <p className="px-2 pt-2 text-[11px] text-danger">{img.rejectReason.replace("[SPERRE] ", "")}</p> : null}
-              <div className="flex gap-1 p-2">
-                {!img.isCover ? (
-                  <form action={onCover} className="flex-1"><input type="hidden" name="imageId" value={img.id} /><button className="w-full rounded px-2 py-1 text-xs text-muted hover:bg-surface-3 hover:text-gold">Als Titelbild</button></form>
-                ) : <span className="flex-1" />}
-                <form action={onDelete}><input type="hidden" name="imageId" value={img.id} /><button className="rounded px-2 py-1 text-xs text-danger hover:bg-danger/10">Löschen</button></form>
-              </div>
-            </div>
-          ))}
+      {result ? <Alert variant={result.ok ? "success" : "error"}>{result.message}</Alert> : null}
+      {pickErrors.length ? <Alert variant="error">{pickErrors.join(" ")}</Alert> : null}
+
+      {/* Anzeigebild */}
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h3 className="font-display text-xl text-white">Anzeigebild</h3>
+          {cover ? <button type="button" onClick={() => act(onDelete, cover.id)} className="text-xs text-danger hover:underline">Anzeigebild löschen</button> : null}
         </div>
-      ) : null}
-      <StepForm action={uploadImagesAction} profileId={profileId}>
-        {() => (
-          <>
-            <Field label="Bilder hochladen" name="images" hint="JPEG, PNG oder WebP, max. 10 MB je Bild, mind. 300 × 300 Pixel. Metadaten (z. B. GPS) werden automatisch entfernt.">
-              <Input id="images" name="images" type="file" accept="image/jpeg,image/png,image/webp" multiple className="h-auto py-2 file:mr-4 file:rounded file:border-0 file:bg-gold/15 file:px-3 file:py-1 file:text-gold" />
-            </Field>
-            <label className="flex items-start gap-3 rounded-lg border border-border bg-background-alt p-4 text-sm">
-              <Checkbox name="imageConsent" className="mt-0.5" />
-              <span>Ich bestätige, dass ich alle Rechte an den Bildern besitze, die abgebildete Person volljährig ist und der Veröffentlichung ausdrücklich und freiwillig zugestimmt hat. Pornografische Darstellungen sind nicht erlaubt.</span>
-            </label>
-          </>
-        )}
-      </StepForm>
+        <p className="text-xs text-subtle">Das Titelbild deiner Sedcard auf der Startseite, im Banner und in den Suchergebnissen. Es erscheint auch in deiner Galerie.</p>
+        <DropZone label="Anzeigebild" files={coverFile} onChange={setCoverFile} onErrors={setPickErrors} disabled={!!busy}
+          current={cover ? { src: cover.thumb, badge: statusLabel[cover.status] } : null}
+          hint="JPEG, PNG oder WebP, max. 10 MB, mind. 300 × 300 Pixel" />
+      </section>
+
+      {/* Weitere Bilder */}
+      <section className="space-y-3 border-t border-border pt-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h3 className="font-display text-xl text-white">Bilder hochladen</h3>
+          <span className="text-xs text-subtle">{images.length} von {maxImages} Bildern</span>
+        </div>
+        {gallery.length ? <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">{gallery.map(tile)}</div> : null}
+        <DropZone label="Bilder hochladen" multiple files={galleryFiles} onChange={setGalleryFiles} onErrors={setPickErrors} disabled={!!busy}
+          hint="Mehrere Bilder gleichzeitig möglich – JPEG, PNG oder WebP, max. 10 MB je Bild" />
+      </section>
+
+      <div className="space-y-5 border-t border-border pt-6">
+        <label className="flex items-start gap-3 rounded-lg border border-border bg-background-alt p-4 text-sm">
+          <Checkbox checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5" />
+          <span>Ich bestätige, dass ich alle Rechte an den Bildern besitze, die abgebildete Person volljährig ist und der Veröffentlichung ausdrücklich und freiwillig zugestimmt hat. Pornografische Darstellungen sind nicht erlaubt.</span>
+        </label>
+        <p className="text-xs text-subtle">Metadaten (z. B. GPS-Standort) werden automatisch entfernt. Neue Bilder werden vor der Veröffentlichung geprüft.</p>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="button" variant="outline" disabled={!!busy} onClick={() => save(false)}>Speichern</Button>
+          <Button type="button" disabled={!!busy} onClick={() => save(true)}>Speichern & weiter</Button>
+          {busy ? <span role="status" className="text-sm text-muted">{busy}</span> : pending ? <span className="text-xs text-subtle">{pending} neue(s) Bild(er) werden beim Speichern hochgeladen.</span> : null}
+        </div>
+      </div>
     </div>
   );
 }
