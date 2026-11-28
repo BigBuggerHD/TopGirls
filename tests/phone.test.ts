@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { formatPhone, normalizePhone } from "@/lib/phone";
 import { publicLocation } from "@/lib/districts";
 import { parsePrices } from "@/lib/prices";
+import { cleanLanguages } from "@/lib/languages";
 import { normalizeTelegramUsername, telegramLink, whatsappLink } from "@/lib/messenger";
 
 describe("Telefonnummer", () => {
@@ -65,5 +66,13 @@ describe("Preise", () => {
       { label: "2 Std", incallCents: 45000, outcallCents: 45000 },
       { label: "Over-Night", incallCents: 150000, outcallCents: null },
     ]);
+  });
+});
+
+describe("Sprachen", () => {
+  it("übernimmt nur Sprachen der Liste (plus ältere Angaben), höchstens 5, in Listen-Reihenfolge", () => {
+    expect(cleanLanguages(["Spanisch", "Deutsch", "Klingonisch"])).toEqual(["Deutsch", "Spanisch"]);
+    expect(cleanLanguages(["Niederländisch", "Deutsch"], ["Niederländisch"])).toEqual(["Deutsch", "Niederländisch"]);
+    expect(cleanLanguages(["Deutsch", "Englisch", "Russisch", "Ukrainisch", "Französisch", "Italienisch"])).toHaveLength(5);
   });
 });

@@ -16,6 +16,7 @@ import { hmacSha256Hex, safeEqual } from "@/lib/crypto";
 import { env } from "@/lib/env";
 import { normalizePhone } from "@/lib/phone";
 import { normalizeTelegramUsername } from "@/lib/messenger";
+import { cleanLanguages, MAX_LANGUAGES } from "@/lib/languages";
 import { sendSms, smsDevMode, SmsNotConfiguredError } from "@/lib/sms";
 import { randomInt } from "node:crypto";
 import { audit } from "@/lib/audit";
@@ -121,9 +122,11 @@ export async function saveDescriptionAction(_: ActionState, fd: FormData): Promi
   const text = checkProfileText(`${headline ?? ""} ${description}`);
   if (text.flagged) return { ok: false, message: `Unzulässiger Inhalt: ${text.reasons.join(", ")}. Bitte beachte unsere Richtlinien.` };
   const changed = description !== p.description || headline !== p.headline;
+  const requested = fd.getAll("languages").map(String);
+  if (new Set(requested).size > MAX_LANGUAGES) return { ok: false, message: `Bitte wähle höchstens ${MAX_LANGUAGES} Sprachen.`, errors: { languages: [`Höchstens ${MAX_LANGUAGES} Sprachen.`] } };
   await db.profile.update({
     where: { id: p.id },
-    data: { description, headline, ...(changed ? reviewIfPublished(p.status) : {}) },
+    data: { description, headline, languages: cleanLanguages(requested, p.languages), ...(changed ? reviewIfPublished(p.status) : {}) },
   });
   return done(p.id, 6, fd);
 }

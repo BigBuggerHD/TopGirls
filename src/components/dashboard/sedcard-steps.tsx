@@ -20,6 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Alert } from "@/components/ui/alert";
 import { DropZone } from "@/components/ui/drop-zone";
+import { LANGUAGES, MAX_LANGUAGES } from "@/lib/languages";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { formatPhone, normalizePhone } from "@/lib/phone";
@@ -171,7 +172,12 @@ export function ProfileDataStep({ profile, categories, filters, values }: { prof
   );
 }
 
-export function DescriptionStep({ profile }: { profile: { id: string; description: string; headline: string | null } }) {
+/** Schritt 6 „Beschreibung“: Slogan, Beschreibung und Sprachen (höchstens 5). */
+export function DescriptionStep({ profile }: { profile: { id: string; description: string; headline: string | null; languages: string[] } }) {
+  const [langs, setLangs] = useState<string[]>(profile.languages);
+  // Ältere Angaben, die nicht in der Liste stehen, bleiben wählbar
+  const options = [...LANGUAGES, ...profile.languages.filter((l) => !(LANGUAGES as readonly string[]).includes(l))];
+  const full = langs.length >= MAX_LANGUAGES;
   return (
     <StepForm action={saveDescriptionAction} profileId={profile.id}>
       {(s) => (
@@ -182,6 +188,30 @@ export function DescriptionStep({ profile }: { profile: { id: string; descriptio
           <Field label="Beschreibung" name="description" errors={s?.errors?.description} required hint="80–5.000 Zeichen. Keine Angaben, die gegen § 32 ProstSchG verstoßen, keine Hinweise auf Minderjährigkeit.">
             <Textarea id="description" name="description" rows={12} defaultValue={profile.description} maxLength={5000} />
           </Field>
+          <fieldset className="space-y-3 border-t border-border pt-6">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <legend className="font-display text-xl text-white">Sprachen</legend>
+              <span className={cn("text-xs", full ? "text-gold" : "text-subtle")}>maximal {MAX_LANGUAGES} Sprachen gleichzeitig</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {options.map((l) => {
+                const on = langs.includes(l);
+                const locked = !on && full;
+                return (
+                  <label key={l} className={cn(
+                    "flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm transition-colors",
+                    on ? "border-gold/70 bg-gold/10 text-foreground" : "border-border text-muted",
+                    locked ? "cursor-not-allowed opacity-40" : "cursor-pointer hover:border-border-strong",
+                  )}>
+                    <Checkbox name="languages" value={l} checked={on} disabled={locked}
+                      onChange={(e) => setLangs((cur) => (e.target.checked ? [...cur, l] : cur.filter((x) => x !== l)))} />
+                    {l}
+                  </label>
+                );
+              })}
+            </div>
+            {s?.errors?.languages ? <p className="text-xs text-danger">{s.errors.languages[0]}</p> : null}
+          </fieldset>
         </>
       )}
     </StepForm>
