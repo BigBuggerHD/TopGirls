@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { Camera, Check, Circle, Heart, MapPin, RefreshCw, Send, SwitchCamera } from "lucide-react";
+import { Camera, Check, Circle, MapPin, RefreshCw, Send, SwitchCamera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -145,7 +145,7 @@ export function AuthenticityRecorder({ token }: { token: string }) {
           <p className="mb-3 font-medium text-white">So geht&apos;s</p>
           <ol className="space-y-2.5 text-sm text-foreground/90">
             <li className="flex gap-3"><span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-gold/15 text-xs text-gold">1</span><span>Stell dich vor einen Spiegel.</span></li>
-            <li className="flex gap-3"><span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-gold/15 text-xs text-gold">2</span><span>Filme dich im Spiegel und zeig mit den Fingern ein Herz <Heart className="inline size-4 -translate-y-px text-gold" aria-hidden />.</span></li>
+            <li className="flex gap-3"><span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-gold/15 text-xs text-gold">2</span><span>Filme dich im Spiegel und zeig mit den Fingern ein Herz.</span></li>
             <li className="flex gap-3"><span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-gold/15 text-xs text-gold">3</span><span>Die Aufnahme dauert höchstens {MAX_SECONDS} Sekunden. Danach kannst du sie ansehen und absenden.</span></li>
           </ol>
           <p className="mt-4 text-xs text-subtle">Wir fragen nach Kamera und Standort. Der Ton wird nicht aufgenommen.</p>
