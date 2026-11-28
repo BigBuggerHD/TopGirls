@@ -833,7 +833,7 @@ enum AuthenticityStatus {
   APPROVED // Echtheit bestätigt – Link ungültig
 }
 
-/// Echtheits-Prüfung per Einmal-Link: kurzes Video (Dessous, Spiegel, Fingerherz). Video und Standort werden nach der Prüfung gelöscht.
+/// Echtheits-Prüfung per Einmal-Link: kurzes Video (im Spiegel, mit Fingerherz). Video und Standort werden nach der Prüfung gelöscht.
 model AuthenticityCheck {
   id             String             @id @default(cuid())
   profileId      String
