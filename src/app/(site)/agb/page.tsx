@@ -8,7 +8,7 @@ export default function Page() {
       <h2>§ 1 Geltungsbereich und Leistungen</h2>
       <p>Top Girls stellt eine technische Plattform für Anzeigen, Werbeflächen, einen internen Marktplatz sowie Kommunikationsfunktionen bereit. Top Girls bietet selbst keine persönlichen Dienstleistungen an, vermittelt keine solchen und ist nicht Vertragspartei von Vereinbarungen zwischen Inserenten und Interessenten.</p>
       <h2>§ 2 Registrierung</h2>
-      <p>Die Nutzung ist nur volljährigen Personen gestattet. Inserenten müssen vor der Veröffentlichung eine Identitäts- und Altersprüfung durchlaufen. Mehrfachkonten zur Umgehung von Sperren sind untersagt.</p>
+      <p>Die Nutzung ist nur volljährigen Personen gestattet. Jede Sedcard wird vor der Veröffentlichung von unserem Team geprüft; dazu gehört eine Echtheitsprüfung der dargestellten Person. Mehrfachkonten zur Umgehung von Sperren sind untersagt.</p>
       <h2>§ 3 Pflichten der Inserenten</h2>
       <ul>
         <li>Alle dargestellten Personen sind volljährig und haben der Veröffentlichung freiwillig zugestimmt.</li>

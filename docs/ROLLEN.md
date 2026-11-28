@@ -9,14 +9,14 @@ Bei der Registrierung gibt es **keine Kontoarten** mehr. Alle Nutzer – Anbiete
 | Rolle | Beschreibung | Rechte |
 |---|---|---|
 | Mitglied (`MEMBER`) | Einheitliche Kontoart für alle | Sedcards (beliebig viele, bis zum Limit in den Einstellungen), Premium & Werbung, Token, Statistiken, Marktplatz, Nachrichten, Forum, Verifizierung |
-| Moderator (`MODERATOR`) | Team: Inhaltsprüfung | Sedcards, Bilder, ID-Prüfungen, Meldungen, Marktplatz, Forum, Werbebuchungen, gemeldete Nachrichten |
+| Moderator (`MODERATOR`) | Team: Inhaltsprüfung | Sedcards, Bilder, Echtheitsprüfung, Nachweise, Meldungen, Marktplatz, Forum, Werbebuchungen, gemeldete Nachrichten |
 | Administrator (`ADMIN`) | Team: Vollzugriff | alle Rechte inkl. Benutzer, Rollen, Kategorien, Filter, Preise, Token-Buchungen, Zahlungen, Einstellungen, Audit |
 
 Die früheren Kontoarten (Besucher, Einzelanbieterin, Agentur, Apartmentanbieter, Clubbetreiber, Massagestudio) existieren nur noch technisch in der Datenbank, werden nicht mehr vergeben und haben exakt die Rechte eines Mitglieds. Bestehende Konten wurden per Migration auf „Mitglied“ umgestellt.
 
 ## Schutzregel für Personen-Sedcards
 
-Die **erste** Sedcard eines Kontos in den Kategorien „Frauen“ oder „Online-Inserate“ ist durch die Identitäts- und Altersprüfung des Kontos abgedeckt. **Jede weitere** Personen-Sedcard (typisch bei Agenturen) benötigt zusätzlich einen Alters- und Einwilligungsnachweis der dargestellten Person, der von der Moderation geprüft wird (`src/lib/model-consent.ts`).
+Die **erste** Sedcard eines Kontos in den Kategorien „Frauen“ oder „Online-Inserate“ ist durch die Echtheitsprüfung der Sedcard (Assistent, Schritt 7) abgedeckt. **Jede weitere** Personen-Sedcard (typisch bei Agenturen) benötigt zusätzlich einen Alters- und Einwilligungsnachweis der dargestellten Person, der von der Moderation geprüft wird (`src/lib/model-consent.ts`).
 
 ## Grundsätze
 

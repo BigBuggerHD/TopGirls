@@ -19,8 +19,8 @@ Top Girls ist ein Anzeigen-, Werbe- und Plattformportal für volljährige Anbiet
 | Marktplatz | Apartmentvermietung, Stellen Clubs/Massagestudios, Agenturangebote u. a. – mit Moderation |
 | Forum & Nachrichten | Geschlossenes Forum mit Regeln und Inhaltsfilter gegen private Daten/Anschuldigungen, private Nachrichten mit Blockieren/Archivieren/Melden |
 | Statistiken | Impressionen, Profilaufrufe, Kontaktklicks je Tag; Filter Tag/Woche/Monat/frei; Diagramme + Tabellenansicht |
-| Adminbereich | Benutzer, Rollen, Sedcards, Bildprüfung, Alters-/ID-Prüfung, Meldungen, Sperrungen, Kategorien, Filter, Werbung, Produkte & Preise, Transaktionen, Zahlungen, Forum, Marktplatz, Statistiken, Audit-Protokoll, Systemeinstellungen |
-| Schutzmaßnahmen | Identitätsprüfung vor Veröffentlichung, Einwilligungsnachweis bei Agenturprofilen, Meldeverfahren mit Priorisierung und Sofortdeaktivierung, Bild-Hash-Sperrliste, Inhaltsfilter (Minderjährigkeit, § 32 ProstSchG) |
+| Adminbereich | Benutzer, Rollen, Sedcards, Bildprüfung, Echtheitsprüfung (Video per Einmal-Link), Meldungen, Sperrungen, Kategorien, Filter, Werbung, Produkte & Preise, Transaktionen, Zahlungen, Forum, Marktplatz, Statistiken, Audit-Protokoll, Systemeinstellungen |
+| Schutzmaßnahmen | Echtheitsprüfung jeder Sedcard vor Veröffentlichung, Einwilligungsnachweis bei Agenturprofilen, Meldeverfahren mit Priorisierung und Sofortdeaktivierung, Bild-Hash-Sperrliste, Inhaltsfilter (Minderjährigkeit, § 32 ProstSchG) |
 | DSGVO | Datenexport (JSON), Kontolöschung mit Anonymisierung, Löschung von Ausweisdokumenten nach Prüfung, keine Tracking-Cookies, IP nur gehasht |
 
 ## Technologie

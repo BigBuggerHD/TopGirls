@@ -30,14 +30,14 @@ export function ProfileCard({ p, sponsored = false, priority = false, variant = 
         <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
           <p className="flex items-center gap-1.5 font-display text-2xl text-white sm:text-3xl">
             <span>{p.stageName}{p.age ? <span className="text-lg text-white/70 sm:text-xl">, {p.age}{p.profileType === "DUO" && p.age2 ? ` & ${p.age2}` : ""}</span> : null}</span>
-            {!banner && p.verified ? <BadgeCheck className="size-4 text-gold" aria-label="Verifiziert" /> : null}
+            {!banner && p.verified ? <BadgeCheck className="size-4 text-gold" aria-label="Echtheit geprüft" /> : null}
           </p>
           <p className="mt-1 flex items-center gap-1 text-sm text-white/75"><MapPin className="size-3.5" /> {p.city}{banner ? "" : ` · ${p.category.name}`}</p>
           {banner ? (
             p.verified ? (
-              <p className="mt-2 flex items-center gap-1.5 text-sm text-gold"><BadgeCheck className="size-4" /> Identität geprüft</p>
+              <p className="mt-2 flex items-center gap-1.5 text-sm text-gold"><BadgeCheck className="size-4" /> Echtheit geprüft</p>
             ) : (
-              <p className="mt-2 text-sm text-white/50">Identität nicht geprüft</p>
+              <p className="mt-2 text-sm text-white/50">Echtheit nicht geprüft</p>
             )
           ) : p.headline ? <p className="mt-1 line-clamp-1 text-sm text-white/60">{p.headline}</p> : null}
         </div>

@@ -16,7 +16,8 @@
 | DSGVO | Datenexport (Art. 15/20), Kontolöschung mit Anonymisierung (Art. 17), Löschung von Ausweisdokumenten nach Prüfung, nur technisch notwendige Cookies, aggregierte Statistiken |
 | Telefonnummern | Bestätigung per 6-stelligem SMS-Code (10 Min. gültig, max. 5 Versuche, nur HMAC-Hash gespeichert; 1 Code/Minute, 5/Stunde je Sedcard). Öffentlich nur bestätigte Nummern; bei Änderung neue Bestätigung nötig |
 | Adresse | Straße/Hausnr. nur öffentlich bei „Adresse anzeigen“, sonst nur Bezirk + Stadt |
-| Missbrauchsschutz | ID-/Altersprüfung, Einwilligungsnachweise, Meldeverfahren mit Priorität und Sofortdeaktivierung, Bild-Hash-Sperrliste, Inhaltsfilter, Blockieren in Nachrichten |
+| Echtheit | Pflicht vor jeder Veröffentlichung: Team bestätigt die Echtheit (Sichtung der Bilder oder Echtheits-Video über Einmal-Link). Link nur als Hash gespeichert; Video privat, nach Prüfung gelöscht; Standort nur als nächstgelegene Stadt (keine Koordinaten), ebenfalls gelöscht; internes Echtheitsfoto nur für das Team. Kamera/Standort sind per Permissions-Policy nur auf `/echtheit/*` erlaubt |
+| Missbrauchsschutz | Echtheitsprüfung, Einwilligungsnachweise, Meldeverfahren mit Priorität und Sofortdeaktivierung, Bild-Hash-Sperrliste, Inhaltsfilter, Blockieren in Nachrichten |
 
 ## Für den Produktivbetrieb
 

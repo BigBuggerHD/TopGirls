@@ -3,6 +3,7 @@ import { Alert } from "@/components/ui/alert";
 const ERRORS: Record<string, string> = {
   "nicht-gefunden": "Eintrag nicht gefunden.",
   "konto-nicht-verifiziert": "Das Konto der Inhaberin ist noch nicht verifiziert. Freigabe nicht möglich.",
+  "echtheit-fehlt": "Die Echtheit ist noch nicht bestätigt. Bitte zuerst im Bereich „Echtheit“ bestätigen.",
   "nachweis-fehlt": "Für dieses Agenturprofil liegt kein geprüfter Alters- und Einwilligungsnachweis vor.",
   "kein-bild-freigegeben": "Bitte gib zuerst mindestens ein Bild frei.",
   "begruendung-fehlt": "Bitte gib eine Begründung an (Art. 17 DSA).",

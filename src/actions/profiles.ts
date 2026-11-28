@@ -397,7 +397,6 @@ export async function getPublishChecklist(profileId: string) {
     { ok: !!(p.contactPhone && p.phoneVerifiedAt), label: "Telefonnummer per SMS verifiziert", link: "?schritt=2" },
     { ok: p.city.length >= 2, label: "Stadt angegeben", link: "?schritt=2" },
     { ok: !!p.owner.emailVerifiedAt, label: "E-Mail-Adresse bestätigt" },
-    ...(settings.requireVerificationForPublish ? [{ ok: p.owner.verificationStatus === "APPROVED", label: "Identitäts- und Altersprüfung des Kontos abgeschlossen", link: "/dashboard/verifizierung" }] : []),
     ...(needsModelConsent ? [{ ok: ["PENDING", "APPROVED"].includes(p.verifications[0]?.status ?? ""), label: "Einwilligung & Altersnachweis der dargestellten Person hochgeladen" }] : []),
   ];
   return { items, ready: items.every((i) => i.ok), needsModelConsent, modelConsent: p.verifications[0] ?? null };

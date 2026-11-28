@@ -97,6 +97,10 @@ require("node:fs").mkdirSync(out, { recursive: true });
     await page.goto(BASE + "/admin/sedcards");
     await page.screenshot({ path: `${out}/08-admin.png` });
     await page.getByRole("link", { name: "Prüfen" }).first().click();
+    // Pflicht: zuerst Echtheit bestätigen
+    await page.getByRole("button", { name: "Freigeben & veröffentlichen" }).waitFor();
+    const confirm = page.getByRole("button", { name: "Echtheit bestätigen" });
+    if (await confirm.count()) { await confirm.click(); await page.getByRole("button", { name: "Bestätigung zurücknehmen" }).waitFor(); }
     await page.getByRole("button", { name: "Freigeben & veröffentlichen" }).click();
     await page.waitForURL(/ok=1|fehler=/);
     console.log("   →", page.url());

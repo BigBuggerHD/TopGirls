@@ -8,7 +8,7 @@ import { AdminFlash, HiddenBack, inputCls } from "@/components/admin/ui";
 const LABELS: Record<keyof typeof DEFAULT_SETTINGS, string> = {
   siteName: "Name der Plattform", profileDurationDays: "Laufzeit freigegebener Sedcards (Tage)", extensionDays: "Verlängerung (Tage)",
   maxImagesPerProfile: "Max. Bilder pro Sedcard", maxProfilesPerProvider: "Max. Sedcards Einzelanbieterin", maxProfilesPerBusiness: "Max. Sedcards Agentur/Club/Studio",
-  listingDurationDays: "Laufzeit Marktplatz-Inserate (Tage)", requireVerificationForPublish: "Identitätsprüfung vor Veröffentlichung erzwingen",
+  listingDurationDays: "Laufzeit Marktplatz-Inserate (Tage)",
   registrationOpen: "Registrierung geöffnet", maintenanceNotice: "Wartungshinweis", contactEmail: "Kontakt-E-Mail", reportEmail: "E-Mail der Meldestelle",
 };
 

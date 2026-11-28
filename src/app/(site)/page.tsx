@@ -53,7 +53,7 @@ export default async function HomePage() {
         {/* Sedcards */}
         <section aria-label="Sedcards" className="pt-4">
           <div className="mb-5 flex flex-wrap justify-end gap-x-6 gap-y-2 text-sm text-muted">
-            <span className="flex items-center gap-2"><BadgeCheck className="size-4 text-gold" /> Identitätsgeprüfte Profile</span>
+            <span className="flex items-center gap-2"><BadgeCheck className="size-4 text-gold" /> Echtheitsgeprüfte Profile</span>
             <MeetingLegend />
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 2xl:grid-cols-4">

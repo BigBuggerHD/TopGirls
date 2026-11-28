@@ -12,9 +12,9 @@ import { AGE_COOKIE, verifyAgeCookie } from "@/lib/age-gate";
  *  - Altersbestätigung (zusätzlich zur Middleware)
  *  - öffentliche Bilder nur, wenn freigegeben UND Sedcard veröffentlicht
  *  - ungeprüfte Bilder nur für Eigentümer und Moderation
- *  - private Dokumente (Ausweise) ausschließlich für Moderation
+ *  - private Dateien (Nachweise, Echtheits-Videos/-Fotos) ausschließlich für Moderation
  */
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ key: string[] }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ key: string[] }> }) {
   const { key: parts } = await params;
   const key = parts.join("/");
   if (key.includes("..")) return new NextResponse("Ungültig", { status: 400 });
@@ -60,6 +60,21 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ key
     } catch (e) {
       console.error("Wasserzeichen fehlgeschlagen", e);
     }
+  }
+
+  // Echtheits-Videos (nur Team): mit Range-Unterstützung, damit im Video gespult werden kann
+  const videoType = key.endsWith(".webm") ? "video/webm" : key.endsWith(".mp4") ? "video/mp4" : null;
+  if (videoType) {
+    const total = data.length;
+    const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.get("range") ?? "");
+    const base = { "Content-Type": videoType, "Accept-Ranges": "bytes", "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" };
+    if (range && (range[1] || range[2])) {
+      const start = range[1] ? Number(range[1]) : Math.max(0, total - Number(range[2]));
+      const end = range[1] && range[2] ? Math.min(Number(range[2]), total - 1) : total - 1;
+      if (start >= total || start > end) return new NextResponse(null, { status: 416, headers: { "Content-Range": `bytes */${total}` } });
+      return new NextResponse(new Uint8Array(data.subarray(start, end + 1)), { status: 206, headers: { ...base, "Content-Range": `bytes ${start}-${end}/${total}`, "Content-Length": String(end - start + 1) } });
+    }
+    return new NextResponse(new Uint8Array(data), { headers: { ...base, "Content-Length": String(total) } });
   }
 
   return new NextResponse(new Uint8Array(data), {

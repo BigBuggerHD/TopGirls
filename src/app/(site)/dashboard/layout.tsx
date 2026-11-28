@@ -25,7 +25,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
     { href: "/dashboard/nachrichten", label: "Nachrichten", icon: "MessageSquare", show: can(user.role, "messages.use"), badge: unreadConvs || undefined },
     { href: "/forum", label: "Forum", icon: "MessagesSquare", show: can(user.role, "forum.use") },
     { href: "/dashboard/benachrichtigungen", label: "Benachrichtigungen", icon: "Bell", show: true, badge: unreadNotes || undefined },
-    { href: "/dashboard/verifizierung", label: "Verifizierung", icon: "ShieldCheck", show: can(user.role, "verification.request") },
     { href: "/dashboard/zahlungen", label: "Zahlungen", icon: "CreditCard", show: can(user.role, "tokens.buy") },
     { href: "/dashboard/einstellungen", label: "Kontoeinstellungen", icon: "Settings", show: true },
   ];

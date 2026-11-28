@@ -5,7 +5,7 @@ import { requirePermission } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
 import { mediaUrl } from "@/lib/media";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { PROFILE_STATUS, VERIFICATION_STATUS } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { parsePrices } from "@/lib/prices";
@@ -17,10 +17,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { Gallery } from "@/components/profiles/gallery";
+import { AuthenticityStep } from "@/components/dashboard/authenticity-step";
 
 export const metadata = { title: "Sedcard bearbeiten" };
 
-const STEPS = ["Profildaten", "Kontaktdaten", "Service", "Verfügbarkeit & Preise", "Bilder", "Beschreibung", "Vorschau & Veröffentlichung"];
+const STEPS = ["Profildaten", "Kontaktdaten", "Service", "Verfügbarkeit & Preise", "Bilder", "Beschreibung", "Echtheit", "Vorschau & Veröffentlichung"];
 
 export default async function EditSedcardPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ schritt?: string }> }) {
   const user = await requirePermission("profile.own");
@@ -43,7 +44,8 @@ export default async function EditSedcardPage({ params, searchParams }: { params
     : [];
   const filterProps = filters.map((f) => ({ id: f.id, key: f.key, label: f.label, type: f.type, unit: f.unit, helpText: f.helpText, minValue: f.minValue, maxValue: f.maxValue, perPerson: f.perPerson, options: f.options.map((o) => ({ id: o.id, label: o.label, value: o.value })) }));
   const valueProps = p.attributes.map((a) => ({ filterId: a.filterId, person: a.person, numberValue: a.numberValue, boolValue: a.boolValue, optionIds: a.options.map((o) => o.optionId) }));
-  const checklist = step === 7 ? await getPublishChecklist(p.id) : null;
+  const checklist = step === 8 ? await getPublishChecklist(p.id) : null;
+  const authCheck = step === 7 ? await db.authenticityCheck.findFirst({ where: { profileId: p.id }, orderBy: { createdAt: "desc" } }) : null;
   const settings = await getSettings();
 
   return (
@@ -122,7 +124,15 @@ export default async function EditSedcardPage({ params, searchParams }: { params
             meeting={{ ...meetingTypes(p), outcallPlace: p.attributes.find((a) => a.filter.key === OUTCALL_PLACE_KEY)?.options[0]?.option.label ?? null }}
           />
         )}
-        {step === 7 && checklist && (
+        {step === 7 && (
+          <AuthenticityStep
+            profileId={p.id}
+            stageName={p.stageName}
+            verifiedAt={p.authenticityVerifiedAt ? formatDateTime(p.authenticityVerifiedAt) : null}
+            check={authCheck ? { status: authCheck.status, createdAt: formatDateTime(authCheck.createdAt), recordedAt: authCheck.recordedAt ? formatDateTime(authCheck.recordedAt) : null, reviewNote: authCheck.reviewNote } : null}
+          />
+        )}
+        {step === 8 && checklist && (
           <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
             <div>
               <p className="mb-3 text-xs uppercase tracking-wider text-subtle">Vorschau</p>
@@ -144,6 +154,13 @@ export default async function EditSedcardPage({ params, searchParams }: { params
                     </li>
                   ))}
                 </ul>
+                <p className="mt-3 flex items-center gap-2 text-sm">
+                  {p.authenticityVerifiedAt ? <Check className="size-4 text-success" /> : <CircleAlert className="size-4 text-subtle" />}
+                  <span className={p.authenticityVerifiedAt ? "text-foreground" : "text-muted"}>
+                    {p.authenticityVerifiedAt ? "Echtheit bestätigt" : "Echtheit: wird bei der Prüfung durch unser Team bestätigt (Pflicht)"}
+                  </span>
+                  {!p.authenticityVerifiedAt ? <Link href="?schritt=7" className="text-xs text-gold underline">Video-Link</Link> : null}
+                </p>
               </div>
               {checklist.needsModelConsent ? (
                 checklist.modelConsent && checklist.modelConsent.status !== "REJECTED" ? (

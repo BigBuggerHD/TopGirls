@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, Coins, Eye, FileText, MousePointerClick, ShieldCheck } from "lucide-react";
+import { AlertTriangle, ArrowRight, Coins, Eye, FileText, MousePointerClick } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { can, ROLE_LABELS } from "@/lib/rbac";
 import { getStatsSeries, resolveRange } from "@/lib/stats";
 import { formatDateTime, formatNumber } from "@/lib/format";
-import { PROFILE_STATUS, VERIFICATION_STATUS } from "@/lib/labels";
+import { PROFILE_STATUS } from "@/lib/labels";
 import { PageHeader, StatCard } from "@/components/ui/page-header";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,6 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
   ]);
   const { from, to } = resolveRange("woche");
   const stats = profiles.length ? await getStatsSeries(profiles.map((p) => p.id), from, to) : null;
-  const business = can(user.role, "verification.request");
 
   return (
     <div>
@@ -32,12 +31,6 @@ export default async function DashboardHome({ searchParams }: { searchParams: Pr
           <Alert variant="warning" className="flex flex-wrap items-center justify-between gap-3">
             <span className="flex items-center gap-2"><AlertTriangle className="size-4" /> Deine E-Mail-Adresse ist noch nicht bestätigt.</span>
             <ResendVerificationButton />
-          </Alert>
-        ) : null}
-        {business && user.verificationStatus !== "APPROVED" ? (
-          <Alert variant="info" className="flex flex-wrap items-center justify-between gap-3">
-            <span className="flex items-center gap-2"><ShieldCheck className="size-4" /> Identitätsprüfung: {VERIFICATION_STATUS[user.verificationStatus]}. Sie ist Voraussetzung für die Veröffentlichung.</span>
-            {user.verificationStatus !== "PENDING" ? <Button asChild size="sm" variant="outline"><Link href="/dashboard/verifizierung">Jetzt verifizieren</Link></Button> : null}
           </Alert>
         ) : null}
       </div>

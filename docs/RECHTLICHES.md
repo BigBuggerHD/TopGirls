@@ -13,14 +13,14 @@
 
 ## Umgesetzte Schutzmaßnahmen
 
-Altersabfrage (serverseitig) · Verbot pornografischer Inhalte · Identitäts-/Altersprüfung vor Veröffentlichung · Einwilligungs- und Altersnachweis je Person bei Agenturprofilen · Pflicht-Erklärungen beim Einreichen · Begriffssperren (Minderjährigkeit, § 32 ProstSchG) · manuelle Bildprüfung · Bild-Hash-Sperrliste · Meldeverfahren auch ohne Konto mit Priorisierung und Sofortdeaktivierung · begründete Moderationsentscheidungen · Forum-Inhaltsfilter gegen private Daten und unbelegte Anschuldigungen · Hilfeseite mit Beratungsangeboten · Audit-Protokoll.
+Altersabfrage (serverseitig) · Verbot pornografischer Inhalte · Echtheitsprüfung jeder Sedcard vor Veröffentlichung · Einwilligungs- und Altersnachweis je Person bei Agenturprofilen · Pflicht-Erklärungen beim Einreichen · Begriffssperren (Minderjährigkeit, § 32 ProstSchG) · manuelle Bildprüfung · Bild-Hash-Sperrliste · Meldeverfahren auch ohne Konto mit Priorisierung und Sofortdeaktivierung · begründete Moderationsentscheidungen · Forum-Inhaltsfilter gegen private Daten und unbelegte Anschuldigungen · Hilfeseite mit Beratungsangeboten · Audit-Protokoll.
 
 ## Risiken und sichere Alternativen
 
 | Risiko | Bewertung | Empfehlung |
 |---|---|---|
 | Einfache Altersabfrage | Keine Altersverifikation i. S. d. JMStV | Keine pornografischen Inhalte zulassen (umgesetzt); für erotische Bilder KJM-geprüftes AVS integrieren, wenn rechtlich geboten |
-| Manuelle Ausweisprüfung | Fehleranfällig, sensible Daten | Zertifizierten Ident-Dienst (z. B. eID/VideoIdent) anbinden; Dokumente werden bereits nach Prüfung gelöscht |
+| Keine Ausweis-/Altersprüfung der Inserenten (Entscheidung des Betreibers) | Volljährigkeit der dargestellten Personen wird nur durch Sichtung/Echtheits-Video plausibilisiert, nicht nachgewiesen | Rechtlich prüfen lassen (JuSchG, ProstSchG); bei Bedarf zertifizierten Ident-Dienst (eID/VideoIdent) anbinden |
 | Agenturen verwalten fremde Profile | Risiko von Fremdsteuerung/Zwang | Einwilligungsnachweis je Profil (umgesetzt); zusätzlich direkte Bestätigung durch die dargestellte Person (eigener Login/Video-Check) empfohlen |
 | Art.-9-Daten in Sedcards | Hohe Schutzbedürftigkeit | DSFA durchführen, ausdrückliche Einwilligung dokumentieren |
 | Forum-Warnungen vor Kunden | Persönlichkeitsrechtsverletzungen | Filter + Moderation (umgesetzt); Warnungen nur anonymisiert, konkrete Fälle an Polizei |

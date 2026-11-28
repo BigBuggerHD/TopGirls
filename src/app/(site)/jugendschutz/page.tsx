@@ -11,7 +11,7 @@ export default function Page() {
         <li>Serverseitig abgesicherte Altersabfrage vor dem Zugriff auf jegliche Inhalte – auch bei direkten Links und API-Zugriffen.</li>
         <li>Kennzeichnung mit dem RTA-Label für Jugendschutzprogramme und Filtersoftware.</li>
         <li>Verbot pornografischer Inhalte; manuelle Prüfung aller Bilder und Sedcards vor der Veröffentlichung.</li>
-        <li>Verpflichtende Identitäts- und Altersprüfung aller Inserenten; bei Agenturprofilen zusätzlich Altersnachweis und Einwilligung jeder dargestellten Person.</li>
+        <li>Verpflichtende Echtheitsprüfung jeder Sedcard vor der Veröffentlichung (Sichtung der Bilder bzw. kurzes Echtheits-Video); bei Agenturprofilen zusätzlich Altersnachweis und Einwilligung jeder dargestellten Person.</li>
         <li>Automatische Sperre von Begriffen, die auf Minderjährigkeit hindeuten; sofortige Deaktivierung gemeldeter Profile bei Verdacht.</li>
         <li>Benannte/r Jugendschutzbeauftragte/r: [Name, Kontakt].</li>
       </ul>

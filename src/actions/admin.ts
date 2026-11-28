@@ -44,7 +44,8 @@ export async function reviewProfileAction(fd: FormData) {
   const settings = await getSettings();
 
   if (decision === "approve") {
-    if (settings.requireVerificationForPublish && p.owner.verificationStatus !== "APPROVED") return back(fd, `/admin/sedcards/${id}`, "fehler=konto-nicht-verifiziert");
+    // Pflicht: Echtheit durch das Team bestätigt (Video oder Sichtung der Bilder)
+    if (!p.authenticityVerifiedAt) return back(fd, `/admin/sedcards/${id}`, "fehler=echtheit-fehlt");
     const needsConsent = await requiresModelConsent(p);
     if (needsConsent && p.verifications[0]?.status !== "APPROVED") return back(fd, `/admin/sedcards/${id}`, "fehler=nachweis-fehlt");
     if (!p.images.some((i) => i.status === "APPROVED")) return back(fd, `/admin/sedcards/${id}`, "fehler=kein-bild-freigegeben");
@@ -52,7 +53,7 @@ export async function reviewProfileAction(fd: FormData) {
     await db.profile.update({
       where: { id },
       data: {
-        status: "PUBLISHED", rejectionReason: null, reviewedAt: now, verified: p.owner.verificationStatus === "APPROVED",
+        status: "PUBLISHED", rejectionReason: null, reviewedAt: now, verified: true,
         publishedAt: p.publishedAt ?? now,
         expiresAt: p.expiresAt && p.expiresAt > now ? p.expiresAt : new Date(now.getTime() + settings.profileDurationDays * DAY),
         slug: p.slug.startsWith("entwurf-") ? `${slugify(`${p.stageName}-${p.city}`)}-${id.slice(-4)}` : p.slug,
@@ -111,7 +112,7 @@ export async function reviewVerificationAction(fd: FormData) {
   ]);
   // Datenminimierung: Dokumente nach der Entscheidung löschen
   for (const k of [v.documentKey, v.selfieKey]) if (k) await storage().delete(k).catch(() => {});
-  await notify(v.userId, approve ? "Verifizierung erfolgreich" : "Verifizierung abgelehnt", approve ? "Deine Prüfung wurde erfolgreich abgeschlossen." : `Grund: ${note}`, v.profileId ? `/dashboard/sedcards/${v.profileId}?schritt=7` : "/dashboard/verifizierung");
+  await notify(v.userId, approve ? "Verifizierung erfolgreich" : "Verifizierung abgelehnt", approve ? "Deine Prüfung wurde erfolgreich abgeschlossen." : `Grund: ${note}`, v.profileId ? `/dashboard/sedcards/${v.profileId}?schritt=8` : "/dashboard");
   await audit(mod.id, `verification.${approve ? "approve" : "reject"}`, { type: "IdentityVerification", id }, { note });
   revalidatePath("/admin/verifizierungen");
   back(fd, "/admin/verifizierungen");

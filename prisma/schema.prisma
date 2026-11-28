@@ -229,55 +229,57 @@ enum ProfileStatus {
 }
 
 model Profile {
-  id                 String        @id @default(cuid())
-  slug               String        @unique
-  ownerId            String
-  owner              User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  categoryId         String
-  category           Category      @relation(fields: [categoryId], references: [id])
-  stageName          String
-  headline           String?
-  description        String        @default("")
-  city               String        @default("")
-  postalCode         String?
-  region             String?
-  profileType        String        @default("SINGLE") // SINGLE = Einzel, DUO = Duo (zwei Personen)
-  age                Int? // angegebenes Alter (>= 18, serverseitig geprüft)
-  partnerName        String? // Duo: Name der zweiten Person
-  age2               Int? // Duo: Alter der zweiten Person (>= 18)
-  languages          String[]      @default([])
-  availability       Json? // { mo: {from,to,active}, ... }
-  availabilityNote   String?
-  prices             Json? // [{ label: "1 Stunde", amountCents: 20000 }, …]
-  priceNote          String?
-  contactPhone       String? // E.164, z. B. +4915112345678
-  phoneVerifiedAt    DateTime? // SMS-Bestätigung; wird bei Änderung der Nummer zurückgesetzt
-  whatsappEnabled    Boolean       @default(false) // erreichbar per WhatsApp (gleiche Nummer)
-  telegramEnabled    Boolean       @default(false) // erreichbar per Telegram (gleiche Nummer)
-  telegramUsername   String? // optional, ohne @ – Link t.me/<name> statt Telefonnummer
-  street             String?
-  houseNumber        String?
-  district           String? // Bezirk
-  showAddress        Boolean       @default(false) // false = öffentlich nur Bezirk + Stadt
-  contactWhatsapp    String? // veraltet (früher eigene WhatsApp-Nummer)
-  contactEmail       String? // veraltet, wird nicht mehr abgefragt/angezeigt
-  contactWebsite     String? // veraltet, wird nicht mehr abgefragt/angezeigt
-  showPhone          Boolean       @default(true) // veraltet
-  allowMessages      Boolean       @default(false) // Nachrichten über die Website sind deaktiviert
-  status             ProfileStatus @default(DRAFT)
-  rejectionReason    String?
-  consentConfirmedAt DateTime? // Bestätigung: volljährig, freiwillig, Bildrechte
-  verified           Boolean       @default(false)
+  id                     String        @id @default(cuid())
+  slug                   String        @unique
+  ownerId                String
+  owner                  User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  categoryId             String
+  category               Category      @relation(fields: [categoryId], references: [id])
+  stageName              String
+  headline               String?
+  description            String        @default("")
+  city                   String        @default("")
+  postalCode             String?
+  region                 String?
+  profileType            String        @default("SINGLE") // SINGLE = Einzel, DUO = Duo (zwei Personen)
+  age                    Int? // angegebenes Alter (>= 18, serverseitig geprüft)
+  partnerName            String? // Duo: Name der zweiten Person
+  age2                   Int? // Duo: Alter der zweiten Person (>= 18)
+  languages              String[]      @default([])
+  availability           Json? // { mo: {from,to,active}, ... }
+  availabilityNote       String?
+  prices                 Json? // [{ label: "1 Stunde", amountCents: 20000 }, …]
+  priceNote              String?
+  contactPhone           String? // E.164, z. B. +4915112345678
+  phoneVerifiedAt        DateTime? // SMS-Bestätigung; wird bei Änderung der Nummer zurückgesetzt
+  whatsappEnabled        Boolean       @default(false) // erreichbar per WhatsApp (gleiche Nummer)
+  telegramEnabled        Boolean       @default(false) // erreichbar per Telegram (gleiche Nummer)
+  telegramUsername       String? // optional, ohne @ – Link t.me/<name> statt Telefonnummer
+  street                 String?
+  houseNumber            String?
+  district               String? // Bezirk
+  showAddress            Boolean       @default(false) // false = öffentlich nur Bezirk + Stadt
+  authenticityVerifiedAt DateTime? // Echtheit durch das Team bestätigt (Pflicht für die Veröffentlichung)
+  authenticityPhotoKey   String? // internes Echtheitsfoto (Standbild aus dem Video, nur für das Team)
+  contactWhatsapp        String? // veraltet (früher eigene WhatsApp-Nummer)
+  contactEmail           String? // veraltet, wird nicht mehr abgefragt/angezeigt
+  contactWebsite         String? // veraltet, wird nicht mehr abgefragt/angezeigt
+  showPhone              Boolean       @default(true) // veraltet
+  allowMessages          Boolean       @default(false) // Nachrichten über die Website sind deaktiviert
+  status                 ProfileStatus @default(DRAFT)
+  rejectionReason        String?
+  consentConfirmedAt     DateTime? // Bestätigung: volljährig, freiwillig, Bildrechte
+  verified               Boolean       @default(false)
   // Denormalisierte Laufzeiten aktiver Promotions (für performante Sortierung)
-  premiumUntil       DateTime?
-  highlightUntil     DateTime?
-  sponsoredUntil     DateTime?
-  publishedAt        DateTime?
-  expiresAt          DateTime?
-  submittedAt        DateTime?
-  reviewedAt         DateTime?
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
+  premiumUntil           DateTime?
+  highlightUntil         DateTime?
+  sponsoredUntil         DateTime?
+  publishedAt            DateTime?
+  expiresAt              DateTime?
+  submittedAt            DateTime?
+  reviewedAt             DateTime?
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
 
   images             ProfileImage[]
   attributes         ProfileAttribute[]
@@ -286,6 +288,7 @@ model Profile {
   adBookings         AdBooking[]
   verifications      IdentityVerification[]
   phoneVerifications PhoneVerification[]
+  authenticityChecks AuthenticityCheck[]
 
   @@index([status, categoryId])
   @@index([city])
@@ -819,6 +822,35 @@ model PhoneVerification {
   attempts  Int      @default(0)
   expiresAt DateTime
   createdAt DateTime @default(now())
+
+  @@index([profileId])
+}
+
+enum AuthenticityStatus {
+  OPEN // Link erstellt, noch keine Aufnahme
+  SUBMITTED // Aufnahme eingegangen, wartet auf Prüfung
+  REJECTED // Aufnahme abgelehnt – Link bleibt gültig für eine neue Aufnahme
+  APPROVED // Echtheit bestätigt – Link ungültig
+}
+
+/// Echtheits-Prüfung per Einmal-Link: kurzes Video (Dessous, Spiegel, Fingerherz). Video und Standort werden nach der Prüfung gelöscht.
+model AuthenticityCheck {
+  id             String             @id @default(cuid())
+  profileId      String
+  profile        Profile            @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  tokenHash      String             @unique // nur Hash des Links gespeichert
+  status         AuthenticityStatus @default(OPEN)
+  createdById    String?
+  videoKey       String? // privat, wird nach der Prüfung gelöscht
+  videoMime      String?
+  recordedAt     DateTime? // Serverzeit beim Eingang der Aufnahme
+  locationShared Boolean            @default(false)
+  locationCity   String? // grob: nächstgelegene größere Stadt (keine Koordinaten gespeichert)
+  locationKm     Int?
+  reviewNote     String?
+  reviewerId     String?
+  reviewedAt     DateTime?
+  createdAt      DateTime           @default(now())
 
   @@index([profileId])
 }

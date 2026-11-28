@@ -130,7 +130,7 @@ export function FilterPanel({ filters, categories }: { filters: ClientFilter[]; 
       ) : null}
       <label className="flex items-center gap-2 text-sm">
         <Checkbox checked={sp.get("verifiziert") === "1"} onChange={(e) => update((p) => (e.target.checked ? p.set("verifiziert", "1") : p.delete("verifiziert")))} />
-        Nur verifizierte Profile
+        Nur echtheitsgeprüfte Profile
       </label>
       {filters.filter((f) => f.section !== "service").map((f) => renderFilter(f))}
       {serviceFilters.length ? (

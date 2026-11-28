@@ -9,7 +9,6 @@ export const DEFAULT_SETTINGS = {
   maxProfilesPerProvider: 1,
   maxProfilesPerBusiness: 50,
   listingDurationDays: 30,
-  requireVerificationForPublish: true,
   registrationOpen: true,
   maintenanceNotice: "",
   contactEmail: "kontakt@example.com",

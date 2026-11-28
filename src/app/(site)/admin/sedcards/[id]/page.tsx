@@ -13,6 +13,7 @@ import { Alert } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/input";
 import { AdminFlash, HiddenBack, inputCls } from "@/components/admin/ui";
 import { ImageReviewCard } from "@/components/admin/image-review";
+import { AuthenticityReview } from "@/components/admin/authenticity-review";
 import { mediaUrl } from "@/lib/media";
 
 export default async function AdminProfileDetail({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ok?: string; fehler?: string }> }) {
@@ -25,6 +26,7 @@ export default async function AdminProfileDetail({ params, searchParams }: { par
       owner: true, category: true, images: { orderBy: { sortOrder: "asc" } },
       attributes: { include: { filter: true, options: { include: { option: true } } } },
       verifications: { where: { docType: "MODEL_CONSENT" }, orderBy: { createdAt: "desc" } },
+      authenticityChecks: { orderBy: { createdAt: "desc" }, take: 1 },
     },
   });
   if (!p) notFound();
@@ -32,6 +34,7 @@ export default async function AdminProfileDetail({ params, searchParams }: { par
   const text = checkProfileText(`${p.stageName} ${p.headline ?? ""} ${p.description}`);
   const ownerProfiles = await db.profile.count({ where: { ownerId: p.ownerId } });
   const self = `/admin/sedcards/${id}`;
+  const auth = p.authenticityChecks[0] ?? null;
 
   return (
     <div>
@@ -72,7 +75,6 @@ export default async function AdminProfileDetail({ params, searchParams }: { par
             <h2 className="mb-3 font-display text-xl text-white">Inhaber</h2>
             <p><Link href={`/admin/benutzer/${p.ownerId}`} className="text-gold hover:underline">{p.owner.email}</Link></p>
             <p className="text-muted">{ROLE_LABELS[p.owner.role]}{p.owner.companyName ? ` · ${p.owner.companyName}` : ""}</p>
-            <p className="mt-2">Identitätsprüfung: <strong>{VERIFICATION_STATUS[p.owner.verificationStatus]}</strong></p>
             <p>E-Mail bestätigt: {p.owner.emailVerifiedAt ? formatDate(p.owner.emailVerifiedAt) : "nein"}</p>
             <p>Sedcards des Kontos: {ownerProfiles}</p>
           </section>
@@ -97,8 +99,21 @@ export default async function AdminProfileDetail({ params, searchParams }: { par
             </section>
           ) : null}
 
+          <AuthenticityReview
+            profileId={p.id}
+            sedcardCity={p.city}
+            verifiedAt={p.authenticityVerifiedAt ? formatDateTime(p.authenticityVerifiedAt) : null}
+            photoUrl={p.authenticityPhotoKey ? mediaUrl(p.authenticityPhotoKey) : null}
+            check={auth ? {
+              id: auth.id, status: auth.status, createdAt: formatDateTime(auth.createdAt), videoUrl: auth.videoKey ? mediaUrl(auth.videoKey) : null,
+              recordedAt: auth.recordedAt ? formatDateTime(auth.recordedAt) : null, locationShared: auth.locationShared,
+              locationCity: auth.locationCity, locationKm: auth.locationKm, reviewNote: auth.reviewNote,
+            } : null}
+          />
+
           <section className="rounded-xl border border-gold/40 bg-surface p-5">
             <h2 className="mb-3 font-display text-xl text-white">Entscheidung</h2>
+            {!p.authenticityVerifiedAt ? <p className="mb-3 text-xs text-warning">Freigabe erst möglich, wenn die Echtheit bestätigt ist.</p> : null}
             <form action={reviewProfileAction} className="space-y-3">
               <HiddenBack path="/admin/sedcards" />
               <input type="hidden" name="profileId" value={p.id} />

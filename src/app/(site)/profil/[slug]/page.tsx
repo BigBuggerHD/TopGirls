@@ -108,7 +108,7 @@ export default async function ProfilePage({ params }: Params) {
 
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            {p.verified ? <Badge variant="success"><BadgeCheck className="size-3" /> Verifiziert</Badge> : null}
+            {p.verified ? <Badge variant="success"><BadgeCheck className="size-3" /> Echtheit geprüft</Badge> : null}
             <Badge>{p.category.name}</Badge>
             {duo ? <Badge variant="rose">Duo</Badge> : null}
             {meeting.incall ? <Badge><House className="size-3" /> Incall</Badge> : null}

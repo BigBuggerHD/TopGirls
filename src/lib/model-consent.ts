@@ -6,7 +6,7 @@ export const PERSON_CATEGORIES = ["frauen", "online-inserate"];
 
 /**
  * Schutzregel (Minderjährigkeit, Zwang, Identitätsmissbrauch):
- * Die erste Personen-Sedcard eines Kontos ist durch die Identitäts- und Altersprüfung des Kontos abgedeckt.
+ * Die erste Personen-Sedcard eines Kontos wird über die Echtheitsprüfung (Schritt 7) abgedeckt.
  * Jede WEITERE Personen-Sedcard (z. B. von Agenturen) benötigt einen Alters- und Einwilligungsnachweis
  * der dargestellten Person.
  */
