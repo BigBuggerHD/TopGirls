@@ -59,13 +59,14 @@ export async function reviewProfileAction(fd: FormData) {
         slug: p.slug.startsWith("entwurf-") ? `${slugify(`${p.stageName}-${p.city}`)}-${id.slice(-4)}` : p.slug,
       },
     });
-    await notify(p.ownerId, "Sedcard freigegeben", `„${p.stageName}“ ist jetzt online.`, `/dashboard/sedcards/${id}`);
+    // Glocke nur, wenn in den Einstellungen der Sedcard „Freigabestatus“ aktiv ist (E-Mail wird immer gesendet)
+    if (p.notifyReview) await notify(p.ownerId, "Sedcard freigegeben", `„${p.stageName}“ ist jetzt online.`, `/dashboard/sedcards/${id}`);
     const m = mailTemplates.profileDecision(p.owner.displayName, p.stageName, true);
     await sendMail(p.owner.email, m.subject, m.html, m.text).catch(() => {});
   } else if (decision === "reject" || decision === "block") {
     if (!reason) return back(fd, `/admin/sedcards/${id}`, "fehler=begruendung-fehlt");
     await db.profile.update({ where: { id }, data: { status: decision === "block" ? "BLOCKED" : "REJECTED", rejectionReason: reason, reviewedAt: new Date() } });
-    await notify(p.ownerId, decision === "block" ? "Sedcard gesperrt" : "Sedcard abgelehnt", `„${p.stageName}“: ${reason}`, `/dashboard/sedcards/${id}`);
+    if (p.notifyReview) await notify(p.ownerId, decision === "block" ? "Sedcard gesperrt" : "Sedcard abgelehnt", `„${p.stageName}“: ${reason}`, `/dashboard/sedcards/${id}`);
     const m = mailTemplates.profileDecision(p.owner.displayName, p.stageName, false, reason);
     await sendMail(p.owner.email, m.subject, m.html, m.text).catch(() => {});
   }
@@ -87,7 +88,7 @@ export async function reviewImageAction(fd: FormData) {
     // "ban" = Hash-Sperre: Bild kann nirgends erneut hochgeladen werden (z. B. nicht einvernehmliche Aufnahmen)
     await db.profileImage.update({ where: { id }, data: { status: "REJECTED", rejectReason: decision === "ban" ? `[SPERRE] ${reason}` : reason } });
     if (decision === "ban") await db.profileImage.updateMany({ where: { sha256: img.sha256, id: { not: id } }, data: { status: "REJECTED", rejectReason: `[SPERRE] ${reason}` } });
-    await notify(img.profile.ownerId, "Bild abgelehnt", `Ein Bild deiner Sedcard „${img.profile.stageName}“ wurde abgelehnt: ${reason}`, `/dashboard/sedcards/${img.profileId}?schritt=5`);
+    if (img.profile.notifyReview) await notify(img.profile.ownerId, "Bild abgelehnt", `Ein Bild deiner Sedcard „${img.profile.stageName}“ wurde abgelehnt: ${reason}`, `/dashboard/sedcards/${img.profileId}?schritt=5`);
   }
   await audit(mod.id, `image.${decision}`, { type: "ProfileImage", id }, { reason });
   revalidatePath("/admin/bilder");
@@ -112,7 +113,8 @@ export async function reviewVerificationAction(fd: FormData) {
   ]);
   // Datenminimierung: Dokumente nach der Entscheidung löschen
   for (const k of [v.documentKey, v.selfieKey]) if (k) await storage().delete(k).catch(() => {});
-  await notify(v.userId, approve ? "Verifizierung erfolgreich" : "Verifizierung abgelehnt", approve ? "Deine Prüfung wurde erfolgreich abgeschlossen." : `Grund: ${note}`, v.profileId ? `/dashboard/sedcards/${v.profileId}?schritt=8` : "/dashboard");
+  const vProfile = v.profileId ? await db.profile.findUnique({ where: { id: v.profileId }, select: { notifyReview: true } }) : null;
+  if (!vProfile || vProfile.notifyReview) await notify(v.userId, approve ? "Nachweis bestätigt" : "Nachweis abgelehnt", approve ? "Deine Prüfung wurde erfolgreich abgeschlossen." : `Grund: ${note}`, v.profileId ? `/dashboard/sedcards/${v.profileId}?schritt=9` : "/dashboard");
   await audit(mod.id, `verification.${approve ? "approve" : "reject"}`, { type: "IdentityVerification", id }, { note });
   revalidatePath("/admin/verifizierungen");
   back(fd, "/admin/verifizierungen");

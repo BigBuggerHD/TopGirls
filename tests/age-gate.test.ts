@@ -27,6 +27,8 @@ describe("Altersabfrage-Cookie", () => {
   it("schützt Inhalte, lässt Pflichtseiten zu", () => {
     expect(isAgeGateExempt("/impressum")).toBe(true);
     expect(isAgeGateExempt("/api/payments/paypal/webhook")).toBe(true);
+    expect(isAgeGateExempt("/api/cron")).toBe(true);
+    expect(isAgeGateExempt("/api/cronjob")).toBe(false);
     expect(isAgeGateExempt("/frauen")).toBe(false);
     expect(isAgeGateExempt("/api/media/profiles/x.webp")).toBe(false);
     expect(isAgeGateExempt("/profil/test")).toBe(false);

@@ -57,6 +57,7 @@ model User {
   termsAcceptedAt      DateTime?
   forumRulesAcceptedAt DateTime?
   lastLoginAt          DateTime?
+  lastSeenAt           DateTime? // letzte Aktivität (für den Online-Status, gedrosselt aktualisiert)
   failedLoginCount     Int                @default(0)
   lockedUntil          DateTime?
   createdAt            DateTime           @default(now())
@@ -261,6 +262,13 @@ model Profile {
   showAddress            Boolean       @default(false) // false = öffentlich nur Bezirk + Stadt
   authenticityVerifiedAt DateTime? // Echtheit durch das Team bestätigt (Pflicht für die Veröffentlichung)
   authenticityPhotoKey   String? // internes Echtheitsfoto (Standbild aus dem Video, nur für das Team)
+  // Einstellungen (Assistent, Schritt 8)
+  blockedCountries       String[]      @default([]) // ISO-Ländercodes, in denen die Sedcard nicht angezeigt wird
+  blurForGuests          Boolean       @default(false) // Bilder für nicht angemeldete Besucher verschwommen
+  showOnlineStatus       Boolean       @default(false) // „Online“-Anzeige, wenn die Inhaberin gerade aktiv ist
+  notifyReview           Boolean       @default(true) // Glocke: Freigabestatus
+  notifyPromotion        Boolean       @default(true) // Glocke: Werbung & Push-Up (abgelaufen, von Seite 1 gerutscht)
+  onFirstPage            Boolean? // interner Merker für „von Seite 1 gerutscht“
   contactWhatsapp        String? // veraltet (früher eigene WhatsApp-Nummer)
   contactEmail           String? // veraltet, wird nicht mehr abgefragt/angezeigt
   contactWebsite         String? // veraltet, wird nicht mehr abgefragt/angezeigt

@@ -17,6 +17,7 @@ import { env } from "@/lib/env";
 import { normalizePhone } from "@/lib/phone";
 import { normalizeTelegramUsername } from "@/lib/messenger";
 import { cleanLanguages, MAX_LANGUAGES } from "@/lib/languages";
+import { isCountryCode } from "@/lib/countries";
 import { sendSms, smsDevMode, SmsNotConfiguredError } from "@/lib/sms";
 import { randomInt } from "node:crypto";
 import { audit } from "@/lib/audit";
@@ -218,6 +219,26 @@ export async function verifyPhoneCodeAction(profileId: string, rawCode: string):
   await audit(user.id, "profile.phone.verified", { type: "Profile", id: p.id });
   revalidatePath(`/dashboard/sedcards/${p.id}`);
   return { ok: true, verified: true, phone: v.phone, message: "Telefonnummer verifiziert." };
+}
+
+/** Schritt 8 „Einstellungen“: Länderfilter, Sichtbarkeit, Benachrichtigungen (Glocke). */
+export async function saveSettingsAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  const user = await requireUser();
+  const p = await ownedProfile(String(fd.get("profileId")), user);
+  if (!p) return { ok: false, message: "Sedcard nicht gefunden." };
+  const countries = [...new Set(fd.getAll("blockedCountries").map(String))].filter(isCountryCode).slice(0, 250);
+  await db.profile.update({
+    where: { id: p.id },
+    data: {
+      blockedCountries: countries,
+      blurForGuests: fd.get("blurForGuests") === "on",
+      showOnlineStatus: fd.get("showOnlineStatus") === "on",
+      notifyReview: fd.get("notifyReview") === "on",
+      notifyPromotion: fd.get("notifyPromotion") === "on",
+    },
+  });
+  revalidatePath(`/profil/${p.slug}`);
+  return done(p.id, 8, fd);
 }
 
 /** Schritt 4 „Verfügbarkeit & Preise“. */

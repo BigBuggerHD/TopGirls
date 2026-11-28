@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { getFiltersForCategory, searchProfiles, type SearchParams } from "@/lib/queries/profiles";
 import { trackProfiles } from "@/lib/stats";
+import { getVisitorCountry } from "@/lib/geo";
 import { runHousekeeping } from "@/lib/housekeeping";
 import { formatNumber } from "@/lib/format";
 import { PageHeader, EmptyState } from "@/components/ui/page-header";
@@ -20,7 +21,7 @@ export async function CategorySearch({ slug, basePath, searchParams }: { slug?: 
   if (slug && !category) notFound();
 
   const filters = await getFiltersForCategory(category?.id);
-  const result = await searchProfiles(searchParams, filters, category?.id);
+  const result = await searchProfiles(searchParams, filters, category?.id, await getVisitorCountry());
   await trackProfiles([...result.items, ...result.sponsored].map((p) => p.id), "impressions");
 
   const clientFilters: ClientFilter[] = filters.map((f) => ({

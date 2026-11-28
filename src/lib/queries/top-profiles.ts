@@ -6,8 +6,8 @@ import { cardSelect, publicProfileWhere, type ProfileCardData } from "@/lib/quer
  * Top-Sedcards (optional nur einer Kategorie) nach Profilaufrufen (Klicks auf die Sedcard) der letzten `days` Tage.
  * Werden weniger als `limit` gefunden, wird mit den neuesten Sedcards aufgefüllt.
  */
-export async function getTopProfiles(limit = 10, days = 30, categorySlug?: string): Promise<ProfileCardData[]> {
-  const base = { AND: [publicProfileWhere(), ...(categorySlug ? [{ category: { slug: categorySlug } }] : [])] };
+export async function getTopProfiles(limit = 10, days = 30, categorySlug?: string, country?: string | null): Promise<ProfileCardData[]> {
+  const base = { AND: [publicProfileWhere(country), ...(categorySlug ? [{ category: { slug: categorySlug } }] : [])] };
   const since = new Date(Date.now() - days * 86_400_000);
   const ranked = await db.profileStatDaily.groupBy({
     by: ["profileId"],

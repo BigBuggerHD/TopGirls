@@ -8,6 +8,7 @@ import { trackProfiles } from "@/lib/stats";
 import { ProfileCard } from "@/components/profiles/profile-card";
 import { MarqueeBanner } from "@/components/home/marquee-banner";
 import { getTopProfiles } from "@/lib/queries/top-profiles";
+import { getVisitorCountry } from "@/lib/geo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CategorySelect } from "@/components/home/category-select";
@@ -16,10 +17,11 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   await runHousekeeping();
+  const country = await getVisitorCountry();
   const [profiles, categories, top] = await Promise.all([
-    db.profile.findMany({ where: { AND: [publicProfileWhere(), { category: { slug: "frauen" } }] }, orderBy: { publishedAt: "desc" }, take: 24, select: cardSelect }),
+    db.profile.findMany({ where: { AND: [publicProfileWhere(country), { category: { slug: "frauen" } }] }, orderBy: { publishedAt: "desc" }, take: 24, select: cardSelect }),
     db.category.findMany({ where: { active: true }, orderBy: { sortOrder: "asc" } }),
-    getTopProfiles(10, 30, "frauen"),
+    getTopProfiles(10, 30, "frauen", country),
   ]);
   await trackProfiles([...profiles, ...top].map((p) => p.id), "impressions");
 

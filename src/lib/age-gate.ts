@@ -71,6 +71,7 @@ export function isAgeGateExempt(pathname: string): boolean {
     pathname === "/icon.svg" ||
     pathname.startsWith("/api/age-gate") ||
     /^\/api\/payments\/[a-z-]+\/webhook$/.test(pathname) ||
+    pathname === "/api/cron" || // Wartung per externem Cron-Dienst (geschützt durch CRON_SECRET)
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/brand/")
   );

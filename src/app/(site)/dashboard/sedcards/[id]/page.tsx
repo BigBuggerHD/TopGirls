@@ -4,6 +4,7 @@ import { Check, CircleAlert, Eye } from "lucide-react";
 import { requirePermission } from "@/lib/auth/session";
 import { db } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
+import { countryOptions } from "@/lib/countries";
 import { mediaUrl } from "@/lib/media";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { PROFILE_STATUS, VERIFICATION_STATUS } from "@/lib/labels";
@@ -12,7 +13,7 @@ import { parsePrices } from "@/lib/prices";
 import type { Availability } from "@/lib/availability";
 import { meetingTypes, OUTCALL_PLACE_KEY } from "@/lib/meeting";
 import { deleteImageAction, deleteProfileAction, getPublishChecklist, pauseProfileAction, setCoverImageAction } from "@/actions/profiles";
-import { ContactDataStep, ProfileDataStep, ServiceStep, DescriptionStep, ImagesStep, TimesPricesStep, ModelConsentUpload, SubmitStep } from "@/components/dashboard/sedcard-steps";
+import { ContactDataStep, ProfileDataStep, ServiceStep, SettingsStep, DescriptionStep, ImagesStep, TimesPricesStep, ModelConsentUpload, SubmitStep } from "@/components/dashboard/sedcard-steps";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
@@ -21,7 +22,7 @@ import { AuthenticityStep } from "@/components/dashboard/authenticity-step";
 
 export const metadata = { title: "Sedcard bearbeiten" };
 
-const STEPS = ["Profildaten", "Kontaktdaten", "Service", "Verfügbarkeit & Preise", "Bilder", "Beschreibung", "Echtheit", "Vorschau & Veröffentlichung"];
+const STEPS = ["Profildaten", "Kontaktdaten", "Service", "Verfügbarkeit & Preise", "Bilder", "Beschreibung", "Echtheit", "Einstellungen", "Vorschau & Veröffentlichung"];
 
 export default async function EditSedcardPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ schritt?: string }> }) {
   const user = await requirePermission("profile.own");
@@ -44,7 +45,7 @@ export default async function EditSedcardPage({ params, searchParams }: { params
     : [];
   const filterProps = filters.map((f) => ({ id: f.id, key: f.key, label: f.label, type: f.type, unit: f.unit, helpText: f.helpText, minValue: f.minValue, maxValue: f.maxValue, perPerson: f.perPerson, options: f.options.map((o) => ({ id: o.id, label: o.label, value: o.value })) }));
   const valueProps = p.attributes.map((a) => ({ filterId: a.filterId, person: a.person, numberValue: a.numberValue, boolValue: a.boolValue, optionIds: a.options.map((o) => o.optionId) }));
-  const checklist = step === 8 ? await getPublishChecklist(p.id) : null;
+  const checklist = step === 9 ? await getPublishChecklist(p.id) : null;
   const authCheck = step === 7 ? await db.authenticityCheck.findFirst({ where: { profileId: p.id }, orderBy: { createdAt: "desc" } }) : null;
   const settings = await getSettings();
 
@@ -132,7 +133,13 @@ export default async function EditSedcardPage({ params, searchParams }: { params
             check={authCheck ? { status: authCheck.status, createdAt: formatDateTime(authCheck.createdAt), recordedAt: authCheck.recordedAt ? formatDateTime(authCheck.recordedAt) : null, reviewNote: authCheck.reviewNote } : null}
           />
         )}
-        {step === 8 && checklist && (
+        {step === 8 && (
+          <SettingsStep
+            profile={{ id: p.id, blockedCountries: p.blockedCountries, blurForGuests: p.blurForGuests, showOnlineStatus: p.showOnlineStatus, notifyReview: p.notifyReview, notifyPromotion: p.notifyPromotion }}
+            countries={countryOptions()}
+          />
+        )}
+        {step === 9 && checklist && (
           <div className="grid gap-8 lg:grid-cols-[320px_1fr]">
             <div>
               <p className="mb-3 text-xs uppercase tracking-wider text-subtle">Vorschau</p>

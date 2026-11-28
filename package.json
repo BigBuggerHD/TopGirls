@@ -18,7 +18,8 @@
     "db:seed": "prisma db seed",
     "db:reset": "prisma migrate reset --force",
     "db:studio": "prisma studio",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "geoip:update": "node scripts/geoip-update.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -41,6 +42,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.76.0",
+    "maxmind": "5.0.7",
     "next": "^15.5.29",
     "nodemailer": "^10.6.0",
     "react": "^19.1.1",

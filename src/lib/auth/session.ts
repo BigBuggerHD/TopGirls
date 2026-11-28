@@ -62,7 +62,7 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
       user: {
         select: {
           id: true, email: true, role: true, status: true, displayName: true, companyName: true, tokenBalance: true,
-          verificationStatus: true, emailVerifiedAt: true, suspendedUntil: true, forumRulesAcceptedAt: true,
+          verificationStatus: true, emailVerifiedAt: true, suspendedUntil: true, forumRulesAcceptedAt: true, lastSeenAt: true,
         },
       },
     },
@@ -74,6 +74,10 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   // Gleitende Verlängerung
   if (session.expiresAt.getTime() - Date.now() < RENEW_THRESHOLD_MS) {
     await db.session.update({ where: { id: session.id }, data: { expiresAt: new Date(Date.now() + SESSION_DAYS * 86_400_000) } }).catch(() => {});
+  }
+  // Letzte Aktivität für den Online-Status – höchstens einmal pro Minute schreiben
+  if (!u.lastSeenAt || Date.now() - u.lastSeenAt.getTime() > 60_000) {
+    await db.user.update({ where: { id: u.id }, data: { lastSeenAt: new Date() } }).catch(() => {});
   }
   return u;
 });

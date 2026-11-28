@@ -5,6 +5,8 @@ import { BadgeCheck, Car, Check, ChevronDown, Clock, House, Languages, MapPin, S
 import { MEETING_FILTER_KEY, OUTCALL_PLACE_KEY, meetingTypes } from "@/lib/meeting";
 import { db } from "@/lib/db";
 import { publicProfileWhere } from "@/lib/queries/profiles";
+import { getVisitorCountry } from "@/lib/geo";
+import { isStaff } from "@/lib/rbac";
 import { trackProfiles } from "@/lib/stats";
 import { getCurrentUser } from "@/lib/auth/session";
 import { mediaUrl } from "@/lib/media";
@@ -14,6 +16,7 @@ import { parsePrices } from "@/lib/prices";
 import { dayLabel, dayMode, hasAnyAvailability, type Availability } from "@/lib/availability";
 import { Gallery } from "@/components/profiles/gallery";
 import { ContactReveal } from "@/components/profiles/contact-reveal";
+import { OnlineBadge } from "@/components/profiles/online-badge";
 import { publicLocation } from "@/lib/districts";
 import { ReportDialog } from "@/components/report/report-dialog";
 import { AdSlot } from "@/components/ads/ad-banner";
@@ -27,7 +30,7 @@ async function load(slug: string) {
     where: { AND: [publicProfileWhere(), { slug }] },
     include: {
       category: true,
-      owner: { select: { id: true, role: true, companyName: true, displayName: true } },
+      owner: { select: { id: true, role: true, companyName: true, displayName: true, lastSeenAt: true } },
       images: { where: { status: "APPROVED" }, orderBy: [{ isCover: "desc" }, { sortOrder: "asc" }] },
       attributes: { include: { filter: true, options: { include: { option: true } } }, orderBy: { filter: { sortOrder: "asc" } } },
     },
@@ -46,6 +49,9 @@ export default async function ProfilePage({ params }: Params) {
   const p = await load(slug);
   if (!p) notFound();
   const user = await getCurrentUser();
+  // Länderfilter: Besucher aus ausgeschlossenen Ländern sehen die Sedcard nicht (Inhaberin und Team schon)
+  const country = await getVisitorCountry();
+  if (country && p.blockedCountries.includes(country) && user?.id !== p.owner.id && !(user && isStaff(user.role))) notFound();
   await trackProfiles([p.id], "views");
 
   const meeting = meetingTypes(p);
@@ -108,6 +114,7 @@ export default async function ProfilePage({ params }: Params) {
 
         <div>
           <div className="flex flex-wrap items-center gap-2">
+            <OnlineBadge lastSeen={p.showOnlineStatus ? p.owner.lastSeenAt?.toISOString() : null} className="rounded-full border border-success/30 bg-success/10 px-2.5 py-1" />
             {p.verified ? <Badge variant="success"><BadgeCheck className="size-3" /> Echtheit geprüft</Badge> : null}
             <Badge>{p.category.name}</Badge>
             {duo ? <Badge variant="rose">Duo</Badge> : null}
@@ -176,7 +183,7 @@ export default async function ProfilePage({ params }: Params) {
               </div>
               <AdSlot location="PROFILE_SIDEBAR" layout="stack" />
               <div className="flex items-center justify-between px-1 text-xs text-subtle">
-                <span>Online seit {formatDate(p.publishedAt)}</span>
+                <span>Inseriert seit {formatDate(p.publishedAt)}</span>
                 <ReportDialog targetType="PROFILE" targetId={p.id} loggedIn={!!user} />
               </div>
             </aside>

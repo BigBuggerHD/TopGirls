@@ -89,6 +89,16 @@ npm run typecheck    # TypeScript
 
 End-to-End-Smoke-Test (Playwright): siehe [`docs/TESTS.md`](docs/TESTS.md).
 
+## Länderfilter (Schritt 8 „Einstellungen“)
+
+Das Land eines Besuchers wird aus dem Länder-Header des Hosters (z. B. Cloudflare `CF-IPCountry`) oder aus der lokalen Datenbank **DB-IP Lite** ermittelt. Einmalig (und etwa monatlich) laden:
+
+```bash
+npm run geoip:update
+```
+
+Lokal (localhost) gibt es kein Land – zum Ausprobieren in der `.env` z. B. `GEOIP_TEST_COUNTRY="AT"` setzen und den Server neu starten.
+
 ## SMS-Bestätigung testen
 
 Ein SMS-Anbieter ist noch nicht angebunden. Lokal (`npm run dev`) erscheint der Bestätigungscode im Terminal und zusätzlich als Hinweis im Sedcard-Assistenten (Schritt 2 „Kontaktdaten“).

@@ -67,7 +67,7 @@ export async function confirmAuthenticityAction(fd: FormData) {
     }),
   ]);
   await audit(mod.id, "authenticity.confirm", { type: "Profile", id });
-  await notify(p.ownerId, "Echtheit bestätigt", `Die Echtheit von „${p.stageName}“ wurde bestätigt.`, `/dashboard/sedcards/${id}?schritt=7`);
+  if (p.notifyReview) await notify(p.ownerId, "Echtheit bestätigt", `Die Echtheit von „${p.stageName}“ wurde bestätigt.`, `/dashboard/sedcards/${id}?schritt=7`);
   revalidatePath(`/admin/sedcards/${id}`);
 }
 
@@ -76,12 +76,12 @@ export async function rejectAuthenticityAction(fd: FormData) {
   const mod = await requirePermission("moderation.profiles", "/admin");
   const id = String(fd.get("checkId") ?? "");
   const note = String(fd.get("note") ?? "").trim().slice(0, 300) || "Die Aufnahme entspricht nicht den Vorgaben.";
-  const c = await db.authenticityCheck.findUnique({ where: { id }, include: { profile: { select: { id: true, ownerId: true, stageName: true } } } });
+  const c = await db.authenticityCheck.findUnique({ where: { id }, include: { profile: { select: { id: true, ownerId: true, stageName: true, notifyReview: true } } } });
   if (!c || c.status === "APPROVED") return;
   await deleteKey(c.videoKey);
   await db.authenticityCheck.update({ where: { id }, data: { status: "REJECTED", reviewNote: note, videoKey: null, videoMime: null, locationCity: null, locationKm: null, reviewerId: mod.id, reviewedAt: new Date() } });
   await audit(mod.id, "authenticity.reject", { type: "Profile", id: c.profileId });
-  await notify(c.profile.ownerId, "Echtheits-Video abgelehnt", `„${c.profile.stageName}“: ${note} Über denselben Link kann ein neues Video aufgenommen werden.`, `/dashboard/sedcards/${c.profileId}?schritt=7`);
+  if (c.profile.notifyReview) await notify(c.profile.ownerId, "Echtheits-Video abgelehnt", `„${c.profile.stageName}“: ${note} Über denselben Link kann ein neues Video aufgenommen werden.`, `/dashboard/sedcards/${c.profileId}?schritt=7`);
   revalidatePath(`/admin/sedcards/${c.profileId}`);
 }
 

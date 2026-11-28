@@ -5,17 +5,28 @@ import { MEETING_FILTER_KEY } from "@/lib/meeting";
 
 export const PAGE_SIZE = 24;
 
+/** Standard-Sortierung „Empfohlen“: Premium, dann Hervorhebung, dann neueste. */
+export const DEFAULT_ORDER: Prisma.ProfileOrderByWithRelationInput[] = [
+  { premiumUntil: { sort: "desc", nulls: "last" } }, { highlightUntil: { sort: "desc", nulls: "last" } }, { publishedAt: "desc" },
+];
+
 export type SearchParams = Record<string, string | string[] | undefined>;
 
-export const publicProfileWhere = (): Prisma.ProfileWhereInput => ({
+/**
+ * Öffentlich sichtbare Sedcards. Mit `country` (Land des Besuchers, siehe src/lib/geo.ts)
+ * werden Sedcards ausgeblendet, die dieses Land im Länderfilter ausgeschlossen haben.
+ */
+export const publicProfileWhere = (country?: string | null): Prisma.ProfileWhereInput => ({
   status: "PUBLISHED",
   OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
   owner: { status: "ACTIVE" },
+  ...(country ? { NOT: { blockedCountries: { has: country } } } : {}),
 });
 
 export const cardSelect = {
   id: true, slug: true, stageName: true, headline: true, city: true, age: true, age2: true, profileType: true, verified: true,
   premiumUntil: true, highlightUntil: true, sponsoredUntil: true,
+  showOnlineStatus: true, owner: { select: { lastSeenAt: true } },
   category: { select: { name: true, slug: true } },
   images: { where: { status: "APPROVED" }, orderBy: [{ isCover: "desc" }, { sortOrder: "asc" }], take: 1, select: { thumbKey: true } },
   // Für Incall/Outcall-Symbole (siehe src/lib/meeting.ts)
@@ -42,8 +53,8 @@ export type FilterWithOptions = Awaited<ReturnType<typeof getFiltersForCategory>
  * Baut die Prisma-Bedingung aus URL-Parametern.
  * Dynamische Filter: f_<key>=<optionValue> (mehrfach), f_<key>=1 (Ja/Nein), f_<key>_min / f_<key>_max (Zahl).
  */
-export function buildWhere(sp: SearchParams, filters: FilterWithOptions[], categoryId?: string): Prisma.ProfileWhereInput {
-  const and: Prisma.ProfileWhereInput[] = [publicProfileWhere()];
+export function buildWhere(sp: SearchParams, filters: FilterWithOptions[], categoryId?: string, country?: string | null): Prisma.ProfileWhereInput {
+  const and: Prisma.ProfileWhereInput[] = [publicProfileWhere(country)];
   if (categoryId) and.push({ categoryId });
   const q = one(sp.q).trim().slice(0, 80);
   if (q) and.push({ OR: [{ stageName: { contains: q, mode: "insensitive" } }, { headline: { contains: q, mode: "insensitive" } }, { description: { contains: q, mode: "insensitive" } }] });
@@ -75,12 +86,11 @@ export function buildWhere(sp: SearchParams, filters: FilterWithOptions[], categ
   return { AND: and };
 }
 
-export async function searchProfiles(sp: SearchParams, filters: FilterWithOptions[], categoryId?: string) {
-  const where = buildWhere(sp, filters, categoryId);
+export async function searchProfiles(sp: SearchParams, filters: FilterWithOptions[], categoryId?: string, country?: string | null) {
+  const where = buildWhere(sp, filters, categoryId, country);
   const page = Math.max(1, Math.min(500, Number(one(sp.seite)) || 1));
   const sort = one(sp.sortierung);
-  const orderBy: Prisma.ProfileOrderByWithRelationInput[] =
-    sort === "neu" ? [{ publishedAt: "desc" }] : [{ premiumUntil: { sort: "desc", nulls: "last" } }, { highlightUntil: { sort: "desc", nulls: "last" } }, { publishedAt: "desc" }];
+  const orderBy: Prisma.ProfileOrderByWithRelationInput[] = sort === "neu" ? [{ publishedAt: "desc" }] : DEFAULT_ORDER;
 
   const [total, items, sponsored] = await Promise.all([
     db.profile.count({ where }),

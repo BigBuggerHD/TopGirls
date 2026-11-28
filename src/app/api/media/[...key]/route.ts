@@ -6,6 +6,7 @@ import { applyWatermark } from "@/lib/storage/watermark";
 import { getCurrentUser } from "@/lib/auth/session";
 import { can } from "@/lib/rbac";
 import { AGE_COOKIE, verifyAgeCookie } from "@/lib/age-gate";
+import { getVisitorCountry } from "@/lib/geo";
 
 /**
  * Auslieferung von Bildern mit Zugriffsprüfung:
@@ -26,18 +27,25 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ key:
   const isMod = !!user && can(user.role, "moderation.images");
   let allowed = false;
   let publicCache = false;
+  let blurForGuest = false;
 
   if (key.startsWith("private/")) {
     allowed = !!user && can(user.role, "moderation.verifications");
   } else if (key.startsWith("profiles/")) {
     const img = await db.profileImage.findFirst({
       where: { OR: [{ storageKey: key }, { thumbKey: key }] },
-      select: { status: true, profile: { select: { status: true, ownerId: true } } },
+      select: { status: true, profile: { select: { status: true, ownerId: true, blockedCountries: true, blurForGuests: true } } },
     });
     if (img) {
-      const isPublic = img.status === "APPROVED" && img.profile.status === "PUBLISHED";
-      allowed = isPublic || isMod || img.profile.ownerId === user?.id;
-      publicCache = isPublic;
+      const isOwner = img.profile.ownerId === user?.id;
+      // Länderfilter der Sedcard gilt auch für die Bilder
+      const country = img.profile.blockedCountries.length ? await getVisitorCountry() : null;
+      const blockedHere = !!country && img.profile.blockedCountries.includes(country);
+      const isPublic = img.status === "APPROVED" && img.profile.status === "PUBLISHED" && !blockedHere;
+      allowed = isPublic || isMod || isOwner;
+      // Einstellung „Bilder verschwommen für Gäste“: nicht angemeldete Besucher erhalten eine unscharfe Fassung
+      blurForGuest = img.profile.blurForGuests && !user;
+      publicCache = isPublic && !img.profile.blurForGuests;
     }
   } else if (key.startsWith("ads/")) {
     const ad = await db.adBooking.findFirst({ where: { imageKey: key }, select: { status: true, userId: true } });
@@ -59,6 +67,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ key:
       data = await applyWatermark(key, data);
     } catch (e) {
       console.error("Wasserzeichen fehlgeschlagen", e);
+    }
+    if (blurForGuest) {
+      const sharp = (await import("sharp")).default;
+      data = await sharp(data).blur(28).webp({ quality: 70 }).toBuffer();
     }
   }
 

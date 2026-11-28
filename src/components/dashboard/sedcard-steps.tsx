@@ -4,7 +4,7 @@ import { useActionState, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { BadgeCheck, CircleAlert, Trash2 } from "lucide-react";
 import {
-  saveProfileDataAction, saveContactDataAction, saveServiceAction, saveDescriptionAction, saveTimesPricesAction,
+  saveProfileDataAction, saveContactDataAction, saveServiceAction, saveSettingsAction, saveDescriptionAction, saveTimesPricesAction,
   sendPhoneCodeAction, verifyPhoneCodeAction, submitForReviewAction, uploadProfileImageAction, uploadModelConsentAction,
   type PhoneCodeState,
 } from "@/actions/profiles";
@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Alert } from "@/components/ui/alert";
 import { DropZone } from "@/components/ui/drop-zone";
 import { LANGUAGES, MAX_LANGUAGES } from "@/lib/languages";
+import { CountryPicker } from "./country-picker";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { formatPhone, normalizePhone } from "@/lib/phone";
@@ -667,5 +668,56 @@ export function SubmitStep({ profileId, ready, status }: { profileId: string; re
       <SubmitButton disabled={!ready} size="lg" pendingText="Wird eingereicht …">{status === "PAUSED" ? "Wieder aktivieren" : "Veröffentlichung beantragen"}</SubmitButton>
       {!ready ? <p className="text-xs text-subtle">Bitte vervollständige zuerst alle Punkte der Checkliste.</p> : null}
     </form>
+  );
+}
+
+type SettingsProfile = { id: string; blockedCountries: string[]; blurForGuests: boolean; showOnlineStatus: boolean; notifyReview: boolean; notifyPromotion: boolean };
+
+/** Eine Zeile mit Schiebeschalter, Titel und Erklärung. */
+function SwitchRow({ name, title, text, initial }: { name: string; title: string; text: string; initial: boolean }) {
+  const [on, setOn] = useState(initial);
+  return (
+    <div className="flex items-start justify-between gap-4 py-3.5">
+      <div>
+        <label htmlFor={`sw-${name}`} className="text-sm font-medium text-foreground">{title}</label>
+        <p className="mt-0.5 text-xs text-subtle">{text}</p>
+      </div>
+      <Switch id={`sw-${name}`} name={name} checked={on} onChange={setOn} label={title} />
+    </div>
+  );
+}
+
+/** Schritt 8 „Einstellungen“: Länderfilter, Sichtbarkeit, Benachrichtigungen. */
+export function SettingsStep({ profile, countries }: { profile: SettingsProfile; countries: { code: string; name: string; popular: boolean }[] }) {
+  return (
+    <StepForm action={saveSettingsAction} profileId={profile.id}>
+      {() => (
+        <div className="space-y-8">
+          <section className="space-y-3">
+            <h3 className="font-display text-xl text-white">Länderfilter</h3>
+            <p className="text-sm text-muted">In welchen Ländern soll deine Sedcard nicht angezeigt werden? Mehrfachauswahl möglich.</p>
+            <CountryPicker name="blockedCountries" options={countries} defaultValue={profile.blockedCountries} />
+            <p className="text-xs text-subtle">Besucher aus diesen Ländern sehen deine Sedcard weder in Listen und Suche noch über den direkten Link. Das Land wird anhand der Internetverbindung ermittelt.</p>
+          </section>
+
+          <section className="border-t border-border pt-6">
+            <h3 className="font-display text-xl text-white">Sichtbarkeit</h3>
+            <div className="divide-y divide-border">
+              <SwitchRow name="blurForGuests" title="Bilder verschwommen für Gäste anzeigen" text="Nicht angemeldete Besucher sehen deine Bilder unscharf, Mitglieder sehen sie normal." initial={profile.blurForGuests} />
+              <SwitchRow name="showOnlineStatus" title="Online-Status anzeigen" text="Zeigt „Online“ auf deiner Sedcard, wenn du in den letzten 10 Minuten auf Top Girls aktiv warst." initial={profile.showOnlineStatus} />
+            </div>
+          </section>
+
+          <section className="border-t border-border pt-6">
+            <h3 className="font-display text-xl text-white">Benachrichtigung</h3>
+            <p className="text-xs text-subtle">Hinweise erscheinen bei der Glocke oben im Menü.</p>
+            <div className="divide-y divide-border">
+              <SwitchRow name="notifyReview" title="Freigabestatus" text="Wenn deine Sedcard, Bilder oder die Echtheit geprüft wurden – freigegeben oder abgelehnt." initial={profile.notifyReview} />
+              <SwitchRow name="notifyPromotion" title="Werbung & Push-Up Informationen" text="Wenn eine Platzierung oder ein Werbebanner ausläuft oder deine Sedcard von der ersten Seite rutscht." initial={profile.notifyPromotion} />
+            </div>
+          </section>
+        </div>
+      )}
+    </StepForm>
   );
 }
