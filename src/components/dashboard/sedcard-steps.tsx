@@ -172,7 +172,7 @@ export function ProfileDataStep({ profile, categories, filters, values }: { prof
   );
 }
 
-/** Schritt 6 „Beschreibung“: Slogan, Beschreibung und Sprachen (höchstens 5). */
+/** Schritt 6 „Beschreibung“: Sprachen (höchstens 5), Slogan und Beschreibung. */
 export function DescriptionStep({ profile }: { profile: { id: string; description: string; headline: string | null; languages: string[] } }) {
   const [langs, setLangs] = useState<string[]>(profile.languages);
   // Ältere Angaben, die nicht in der Liste stehen, bleiben wählbar
@@ -181,27 +181,21 @@ export function DescriptionStep({ profile }: { profile: { id: string; descriptio
   return (
     <StepForm action={saveDescriptionAction} profileId={profile.id}>
       {(s) => (
-        <>
-          <Field label="Slogan" name="headline" errors={s?.errors?.headline} hint="Kurze Überschrift unter deinem Namen, max. 90 Zeichen.">
-            <Input id="headline" name="headline" defaultValue={profile.headline ?? ""} maxLength={90} />
-          </Field>
-          <Field label="Beschreibung" name="description" errors={s?.errors?.description} required hint="80–5.000 Zeichen. Keine Angaben, die gegen § 32 ProstSchG verstoßen, keine Hinweise auf Minderjährigkeit.">
-            <Textarea id="description" name="description" rows={12} defaultValue={profile.description} maxLength={5000} />
-          </Field>
-          <fieldset className="space-y-3 border-t border-border pt-6">
+        <div className="space-y-6">
+          <fieldset className="space-y-3">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <legend className="font-display text-xl text-white">Sprachen</legend>
-              <span className={cn("text-xs", full ? "text-gold" : "text-subtle")}>maximal {MAX_LANGUAGES} Sprachen gleichzeitig</span>
+              <span className={cn("text-xs", full ? "text-gold" : "text-subtle")}>{langs.length} von maximal {MAX_LANGUAGES} gewählt</span>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
               {options.map((l) => {
                 const on = langs.includes(l);
                 const locked = !on && full;
                 return (
                   <label key={l} className={cn(
-                    "flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm transition-colors",
-                    on ? "border-gold/70 bg-gold/10 text-foreground" : "border-border text-muted",
-                    locked ? "cursor-not-allowed opacity-40" : "cursor-pointer hover:border-border-strong",
+                    "flex items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm transition-colors",
+                    on ? "border-gold/60 bg-gold/10 text-foreground" : "border-border bg-background-alt/60 text-muted",
+                    locked ? "cursor-not-allowed opacity-40" : "cursor-pointer hover:border-border-strong hover:text-foreground",
                   )}>
                     <Checkbox name="languages" value={l} checked={on} disabled={locked}
                       onChange={(e) => setLangs((cur) => (e.target.checked ? [...cur, l] : cur.filter((x) => x !== l)))} />
@@ -212,7 +206,15 @@ export function DescriptionStep({ profile }: { profile: { id: string; descriptio
             </div>
             {s?.errors?.languages ? <p className="text-xs text-danger">{s.errors.languages[0]}</p> : null}
           </fieldset>
-        </>
+          <div className="space-y-5 border-t border-border pt-6">
+            <Field label="Slogan" name="headline" errors={s?.errors?.headline} hint="Kurze Überschrift unter deinem Namen, max. 90 Zeichen.">
+              <Input id="headline" name="headline" defaultValue={profile.headline ?? ""} maxLength={90} />
+            </Field>
+            <Field label="Beschreibung" name="description" errors={s?.errors?.description} required hint="80–5.000 Zeichen. Keine Angaben, die gegen § 32 ProstSchG verstoßen, keine Hinweise auf Minderjährigkeit.">
+              <Textarea id="description" name="description" rows={12} defaultValue={profile.description} maxLength={5000} />
+            </Field>
+          </div>
+        </div>
       )}
     </StepForm>
   );
