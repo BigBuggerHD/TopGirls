@@ -24,7 +24,7 @@ export function AuthenticityStep({ profileId, stageName, verifiedAt, check }: { 
     if (!url) return;
     try { await navigator.clipboard.writeText(url); setCopied(true); } catch { setCopied(false); }
   };
-  const shareText = url ? `Bitte nimm über diesen Link dein kurzes Echtheits-Video für „${stageName}“ auf (Dessous, im Spiegel, mit Fingerherz): ${url}` : "";
+  const shareText = url ? `Bitte nimm über diesen Link dein kurzes Echtheits-Video für „${stageName}“ auf (im Spiegel, mit Fingerherz): ${url}` : "";
 
   const status = verifiedAt
     ? { tone: "success", text: `Echtheit bestätigt am ${verifiedAt}.` }
@@ -49,7 +49,7 @@ export function AuthenticityStep({ profileId, stageName, verifiedAt, check }: { 
           <h3 className="font-display text-xl text-white">Verifizierungslink</h3>
           <p className="text-sm leading-relaxed text-foreground/85">
             Erstelle einen Einmal-Link und schicke ihn der Dame. Über den Link nimmt sie direkt auf dem Handy ein kurzes Verifizierungs-Video
-            (Dessous, im Spiegel, mit Fingerherz) auf – mit Standort, Datum und Uhrzeit. Das Echtheitsfoto wird von uns als Standbild aus dem
+            (im Spiegel, mit Fingerherz) auf – mit Standort, Datum und Uhrzeit. Das Echtheitsfoto wird von uns als Standbild aus dem
             Video erstellt. Der Link bleibt gültig, bis die Aufnahme freigegeben wurde.
           </p>
           {url ? (
